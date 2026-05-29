@@ -59,12 +59,10 @@ run_checks() {
     done < <(find "$ROOT_DIR/.agents/context" -type f \( -name '*.yaml' -o -name '*.yml' -o -name '*.md' \) 2>/dev/null)
   fi
 
-  # 4) ci-verify-* (읽기전용) — 실패 시 위반으로 기록
-  local v
-  for v in charter completion sdlc structure; do
-    [ -f "$SCRIPT_DIR/ci-verify-$v.mjs" ] || continue
-    node "$SCRIPT_DIR/ci-verify-$v.mjs" >/dev/null 2>&1 || echo "[ci-verify-$v] 실패" >>"$WORK_DIR/.vw_tmp"
-  done
+  # 주의: ci-verify-* 는 여기 넣지 않는다 — 그것들은 **커밋 시점** 게이트(변경파일 인자 +
+  #   ci-verify-completion 은 커밋 메시지를 stdin 으로 읽음)라 상태-drift 검출용이 아니고,
+  #   인자 없이 부르면 stdin 대기로 블록된다. 커밋/CI 시점에 제대로 된 인자로 돈다(B4 ②).
+  #   주기 러너는 "현재 상태 이탈"(구조·문서·미러)만 본다.
 
   if [ -f "$WORK_DIR/.vw_tmp" ]; then
     sort -u "$WORK_DIR/.vw_tmp"

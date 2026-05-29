@@ -33,8 +33,8 @@ check("로그 rotation 존재 (무한증식 방지)", /rotate_log|LOG_MAX_BYTES/
 check("미러 scope = yaml/yml/md 만 (json=charter 제외)", /-name '\*\.yaml'/.test(SRC) && !/-name '\*\.json'/.test(SRC));
 
 // ── 2) 런타임 동작 (실제 실행, 격리 WORK_DIR) ──
-// 템플릿은 현재 깨끗 → once = delta 0, exit 0
-{ const r = run(["once"]); check("once 실행 → exit 0 (템플릿 깨끗)", r.code === 0 && /위반 0|깨끗/.test(r.out)); }
+// once = 메커니즘 검증(host 청결도에 결합 안 함): 일관된 보고 + 정상 exit(0=clean / 1=신규delta)
+{ const r = run(["once"]); check("once 실행 → 일관 보고(깨끗 또는 delta) + 정상 exit(0|1)", (r.code === 0 || r.code === 1) && /위반|깨끗/.test(r.out)); }
 // cron 라인은 once 를 쓰고 --fix 안 씀
 { const r = run(["cron"]); check("cron 라인 = once 사용, --fix 없음", /verify-watch\.sh once/.test(r.out) && !/--fix/.test(r.out)); }
 // accept → baseline 기록, status 가 실행여부+상태 보고
