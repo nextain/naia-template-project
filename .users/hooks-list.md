@@ -1,12 +1,12 @@
 # Hooks 목록
 
-> **SoT**: `.agents/hooks/`
-> 각 훅 파일의 human-readable 인덱스.
+> **SoT**: `.agents/hooks/`. 이 파일은 **사람용 단일 색인**이다.
+> ⚠️ per-item 복사(`.users/hooks/...`)는 하지 않는다 — 이 색인 한 장만 둔다.
+> 갱신: `node scripts/gen-lists.mjs hooks` (결정론 생성).
 
-| 훅 이름 | 파일 | 트리거 | 설명 |
-|---------|------|--------|------|
-| _(등록된 훅 없음)_ | — | — | — |
-
----
-
-> 새 훅 추가 시: `.agents/hooks/` 에 파일 생성 → 이 표에 등록.
+| 이름 | 파일 | 설명 |
+|------|------|------|
+| charter-guard | `.agents/hooks/charter-guard.js` | Charter Guard (PreToolUse on Edit\|Write) — 헌장·hook·설정 파일의 AI 단독 수정 차단. |
+| completion-evidence-guard | `.agents/hooks/completion-evidence-guard.js` | M4 — Completion Evidence Guard (PreToolUse on Bash). 판정은 공통 코어(checkCompletion)에 위임. |
+| sdlc-gate-guard | `.agents/hooks/sdlc-gate-guard.js` | M2 — SDLC Gate Guard (PreToolUse on Edit\|Write). 판정은 공통 코어(checkSdlc)에 위임. |
+| structure-guard | `.agents/hooks/structure-guard.js` | M3 — Structure Guard (PreToolUse on Write\|Edit). 판정은 공통 코어(checkStructure)에 위임. |
