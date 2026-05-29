@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+*.js.map
+
+# Environment / secrets — NEVER commit
+*.env
+!*.env.example
+*.json.local
+.naia-agent.json
+naia-agent.env
+
+# Archive (local only)
+*-old/
+*-archive/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
