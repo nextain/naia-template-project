@@ -13,6 +13,7 @@
 ## 운영·교훈
 
 - [교훈 모음](./lessons.md) — 마이그레이션·검증에서 얻은 실전 교훈
+- [마이그레이션 검증 기록 (누적 ledger)](./migration-verification.md) — project-migration 스킬이 실제로 동작하는지 정직하게 누적 추적
 
 ## 작업 기록 (progress/)
 
