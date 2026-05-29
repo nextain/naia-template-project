@@ -37,23 +37,23 @@ fi
 
 # ── 화이트리스트 추출 (python3) ───────────────────────────────────────────────
 
-ALLOWED_DIRS=$(python3 - <<'PYEOF'
+ALLOWED_DIRS=$(python3 - "$RULES_FILE" <<'PYEOF'
 import json, sys
-with open(sys.argv[1]) as f:
+with open(sys.argv[1], encoding="utf-8") as f:
     rules = json.load(f)
 dirs = rules.get("F12", {}).get("allowed_root_dirs", [])
 print("\n".join(dirs))
 PYEOF
-"$RULES_FILE")
+)
 
-ALLOWED_FILES=$(python3 - <<'PYEOF'
+ALLOWED_FILES=$(python3 - "$RULES_FILE" <<'PYEOF'
 import json, sys
-with open(sys.argv[1]) as f:
+with open(sys.argv[1], encoding="utf-8") as f:
     rules = json.load(f)
 files = rules.get("F13", {}).get("allowed_root_files", [])
 print("\n".join(files))
 PYEOF
-"$RULES_FILE")
+)
 
 # ── 위반 탐지 ─────────────────────────────────────────────────────────────────
 
@@ -62,6 +62,9 @@ VIOLATIONS=()
 # 루트 디렉토리 스캔
 while IFS= read -r -d '' item; do
   name="$(basename "$item")"
+  # VCS 메타데이터(.git)는 항상 스킵 — 화이트리스트 무관, 절대 삭제 대상 아님.
+  # (standalone repo면 .git=디렉토리, submodule이면 .git=gitfile이라 양쪽 스캔에 처리)
+  if [[ "$name" == ".git" ]]; then continue; fi
   # 화이트리스트에 있으면 통과
   if echo "$ALLOWED_DIRS" | grep -qx "$name"; then
     continue
@@ -72,6 +75,7 @@ done < <(find "$ROOT_DIR" -mindepth 1 -maxdepth 1 -type d -print0)
 # 루트 파일 스캔 (심링크 포함)
 while IFS= read -r -d '' item; do
   name="$(basename "$item")"
+  if [[ "$name" == ".git" ]]; then continue; fi   # VCS 메타데이터 스킵 (submodule gitfile)
   if echo "$ALLOWED_FILES" | grep -qx "$name"; then
     continue
   fi
