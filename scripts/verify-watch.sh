@@ -42,12 +42,13 @@ run_checks() {
   sres="$(bash "$SCRIPT_DIR/enforce-root-structure.sh" 2>&1)" || true
   printf '%s\n' "$sres" | grep -E '\[(FAIL|위반)|위반:' | sed 's/^/[structure] /' >>"$WORK_DIR/.vw_tmp" 2>/dev/null || true
 
-  # 2) 문서 그래프 — README entry + progress 면제
-  if [ -d "$ROOT_DIR/docs" ]; then
-    local dres
-    dres="$(node "$SCRIPT_DIR/check-doc-graph.mjs" docs "$DOCS_ENTRY" --exempt "$DOCS_EXEMPT" 2>&1)" || true
-    printf '%s\n' "$dres" | grep -E '^[[:space:]]+- ' | sed 's/^[[:space:]]*/[doc] /' >>"$WORK_DIR/.vw_tmp" 2>/dev/null || true
-  fi
+  # 2) 문서 그래프 — README entry + progress 면제. docs(payload) + about-docs(이 repo 메타, 있으면).
+  local d dres
+  for d in docs about-docs; do
+    [ -d "$ROOT_DIR/$d" ] || continue
+    dres="$(node "$SCRIPT_DIR/check-doc-graph.mjs" "$d" "$DOCS_ENTRY" --exempt "$DOCS_EXEMPT" 2>&1)" || true
+    printf '%s\n' "$dres" | grep -E '^[[:space:]]+- ' | sed "s|^[[:space:]]*|[doc:$d] |" >>"$WORK_DIR/.vw_tmp" 2>/dev/null || true
+  done
 
   # 3) 미러 stale — 큐레이트 context 의 yaml/yml/md 만 (json = charter, 번역 제외). --check 는 LLM 무.
   if [ -d "$ROOT_DIR/.agents/context" ]; then

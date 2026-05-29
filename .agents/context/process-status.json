@@ -5,8 +5,7 @@
   "refs": {
     "project_structure": "docs/project-structure.md",
     "agents_rules": ".agents/context/agents-rules.json",
-    "issue_docs_dir": ".agents/progress/",
-    "lessons": "docs/lessons.md"
+    "issue_docs_dir": ".agents/progress/"
   },
 
   "current_work": {

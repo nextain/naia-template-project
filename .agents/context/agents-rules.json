@@ -40,6 +40,7 @@
 			".github",
 			".users",
 			"READMES",
+			"about-docs",
 			"benchmark",
 			"bin",
 			"data-private",
@@ -50,7 +51,7 @@
 			"scripts",
 			"src"
 		],
-		"note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | data-private = T3 보안(키/시크릿/개인정보) — 디렉터리는 허용하되 내용은 .gitignore (절대 추적 금지)",
+		"note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | data-private = T3 보안(키/시크릿/개인정보) — 디렉터리는 허용하되 내용은 .gitignore (절대 추적 금지) | about-docs = 이 표준 repo 자체에 대한 메타 문서(설명·검증·실험). payload 아님 — project-create/migration 이 복제 제외",
 		"violation_action": "BLOCK — enforce-root-structure.sh --fix 가 삭제",
 		"status": "ACTIVE"
 	},
@@ -73,9 +74,10 @@
 			"tsconfig.json",
 			"tsconfig.base.json",
 			"README.md",
+			"README.template.md",
 			"CHANGELOG.md"
 		],
-		"note": "목록 수정 = 헌장 수정 → 사용자 승인 필수",
+		"note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | README.md = 이 repo 소개(복제 제외) / README.template.md = 새 프로젝트가 받는 skeleton(create·migration 이 README.md 로 사용)",
 		"violation_action": "BLOCK — enforce-root-structure.sh --fix 가 삭제",
 		"status": "ACTIVE"
 	},

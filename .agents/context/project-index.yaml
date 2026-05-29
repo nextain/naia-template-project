@@ -23,8 +23,6 @@ entry_points:
 # 온디맨드 로딩 — 필요한 섹션만 로드
 on_demand_loading:
   process:
-    - file: docs/lessons.md
-      topics: [lessons, 교훈, 왜 이 규칙인가]
     - file: docs/user-scenarios.md
       topics: [UC, 사용자시나리오, test coverage]
     - file: docs/requirements.md

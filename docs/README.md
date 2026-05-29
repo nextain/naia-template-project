@@ -10,19 +10,13 @@
 - [위협 모델](./threat-model.md) — 보안 경계, 시크릿 격리(T3), 추적 금지 경로
 - [LLM 역할 분담](./llm-roles.md) — 작은(라이트) 모델 ↔ 큰 모델 분담, 단일 CLI 어댑터, 검출 계층
 
-## 운영·교훈
-
-- [교훈 모음](./lessons.md) — 마이그레이션·검증에서 얻은 실전 교훈
-- [마이그레이션 검증 기록 (누적 ledger)](./migration-verification.md) — project-migration 스킬이 실제로 동작하는지 정직하게 누적 추적
-
 ## 작업 기록 (progress/)
 
-`docs/progress/` 는 **append-only 작업 기록(ledger)** — 날짜별 설계·검토·진행 메모.
-연대기라서 상호 링크 의무는 없다(`check-doc-graph --exempt progress` 로 고립 검사 면제).
-최신 항목은 `docs/progress/` 를 직접 보라.
+`docs/progress/` 는 **append-only 작업 기록(ledger)** — 날짜별 진행·검토 메모.
+연대기라 상호 링크 의무가 없다(`check-doc-graph --exempt progress` 로 고립 검사 면제).
 
 ## 주기 검증
 
-구조·문서·미러 이탈은 결정론 스크립트가 검출한다. 마이그레이션 후
-`scripts/verify-watch.sh start` 로 백그라운드 주기 검증을 켠다 — 검출·보고만 자동,
-수정은 사람/큰 모델 게이트. 자세히: [LLM 역할 분담](./llm-roles.md) 의 "디텍트 계층".
+구조·문서·미러 이탈은 결정론 스크립트가 검출한다. 마이그레이션 완료 후
+`scripts/verify-watch.sh start`(또는 `cron`)로 백그라운드 주기 검증 — 검출·보고만 자동, 수정은 사람/큰 모델 게이트.
+자세히: [LLM 역할 분담](./llm-roles.md) 의 "디텍트 계층".

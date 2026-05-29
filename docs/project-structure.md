@@ -14,6 +14,7 @@
 | `.claude/` | Claude Code 설정 |
 | `.github/` | CI/CD 워크플로우 |
 | `.users/` | Human-readable mirror (.agents/ 내용 반영) |
+| `about-docs/` | **이 표준 repo 자체**에 대한 메타 문서 (설명·검증 ledger·실험). payload 아님 — project-create/migration 이 복제 제외 |
 | `benchmark/` | 성능·정확도·자율성 벤치마크 |
 | `bin/` | CLI 진입점 |
 | `docs/` | 정규 설계 문서 (이 표에 등록된 것만, 하위: `progress/` 이슈별 진행 산출물) |
@@ -45,7 +46,8 @@
 | `pnpm-lock.yaml` | pnpm 잠금 파일 |
 | `tsconfig.json` | TypeScript 프로젝트 참조 |
 | `tsconfig.base.json` | 공통 tsconfig 기본값 |
-| `README.md` | 프로젝트 소개 |
+| `README.md` | 이 repo 소개 (복제 제외) |
+| `README.template.md` | 새 프로젝트가 받는 README skeleton (create/migration 이 README.md 로 사용) |
 | `CHANGELOG.md` | 변경 이력 |
 
 > 새 파일 추가 시: `agents-rules.json` F13 → 이 표 → 사용자 승인 순서 필수.
