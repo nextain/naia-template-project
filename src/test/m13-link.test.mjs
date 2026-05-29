@@ -68,5 +68,24 @@ function setupDocs(files) {
 	check("http·앵커·mailto는 링크검사 제외", r.absLinks.length === 0 && r.broken.length === 0);
 }
 
+// 3) 디렉터리 기반 orphan 면제 (작업 기록 ledger) — cross-review 반영
+// progress/ 아래 dated 문서는 면제, 단 큐레이트 문서가 파일명에 날짜를 넣어도 면제되면 안 됨.
+{
+	const d = setupDocs({
+		"README.md": "[교훈](./lessons.md)",
+		"lessons.md": "# 교훈",
+		"progress/work-2026-05-30.md": "# 작업 기록 (아무도 안 링크)",
+		"design-2026-05-30.md": "# 큐레이트 설계 (날짜 파일명, progress 밖 — 면제 금지)",
+	});
+	// 면제 없음: progress 문서도, dated 큐레이트도 둘 다 고립
+	const r0 = analyze(d, ["README.md"]);
+	check("면제 없음 → progress·dated 큐레이트 둘 다 고립", r0.orphans.includes("progress/work-2026-05-30.md") && r0.orphans.includes("design-2026-05-30.md"));
+	// 디렉터리 면제(progress): progress 아래만 면제, dated 큐레이트는 여전히 고립
+	const r1 = analyze(d, ["README.md"], ["progress"]);
+	check("progress 디렉터리 면제 → progress 문서는 고립 아님", !r1.orphans.includes("progress/work-2026-05-30.md"));
+	check("★ progress 밖 dated 큐레이트는 여전히 고립(파일명-날짜 면제 아님)", r1.orphans.includes("design-2026-05-30.md"));
+	check("면제 디렉터리 결과에 기록", r1.exemptDirs.includes("progress"));
+}
+
 console.log(`\n결과: ${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

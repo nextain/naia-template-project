@@ -15,7 +15,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 RULES_FILE="$ROOT_DIR/.agents/context/agents-rules.json"
-LOG_DIR="$ROOT_DIR/logs"
+# 로그는 F12 화이트리스트의 .agents 하위에 — 루트 logs/ 는 F12 미등록이라 --fix 가
+# 자기가 만든 디렉터리를 다음 회차에 위반으로 잡는 자기모순을 막는다. (.agents/work 는 gitignore)
+LOG_DIR="$ROOT_DIR/.agents/work"
 LOG_FILE="$LOG_DIR/enforce-$(date '+%Y%m%d-%H%M%S').log"
 
 FIX_MODE=false
