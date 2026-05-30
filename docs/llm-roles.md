@@ -3,17 +3,27 @@
 > 프로젝트의 스크립트·동기화·검증 작업에 어떤 모델을 쓰고, 무엇을 시키고 안 시키는지의 표준.
 > 동기: 작은 모델에 판단·수정을 맡기면 **맥락 소실**로 정합성이 깨진다 (큰 위험). 역할을 명확히 가른다.
 
-## 역할 분담 (불변 원칙)
+## 역할 분담 (불변 원칙) — 3 레벨
 
-| 모델 | 하는 일 | 안 하는 일 |
-|------|---------|-----------|
-| **작은 모델** (라이트 — haiku / gemini-flash-lite / glm-flash) | **번역**(.agents→.users 미러), **생성**(보일러플레이트·초안), **문제점 지적**(검출·리포트) | **수정·판단 금지** — 무엇을 어떻게 고칠지 결정하지 않는다 |
-| **큰 모델** (메인 — Opus/Sonnet 급, 사용자가 대화하는 CLI 의 주 모델) | **수정·판단**(작은 모델이 지적한 문제를 직접 고침), 설계 결정 | 단독 수정 금지 (아래 cross-check) |
+> **naia-agent 의 원조 2계층(`naia-settings/llm.json` main/sub)을 하네스 표준으로 정규화.**
+> "머리쓰기·설계·실질 검증 = 상위(플래그십) / 형식 검증 = 하위(라이트) / 구조는 코드(LLM 무)."
+
+| 레벨 | 하는 일 | 모델 | naia-agent 역할 |
+|------|---------|------|------------------|
+| **0. 결정론 (LLM 무)** | 구조·스키마·기계검증 합격기준 (F12/F13, doc-graph, mirror 해시, `brightness==popcount`) | 없음 (스크립트) | — |
+| **1. 라이트 (하위)** | **형식 검증** + 번역(.agents→.users 미러) + 생성(초안) + **문제점 지적**(검출·리포트) + 자동동기화 | haiku / gemini-flash-lite / glm-flash | `sub` (형식·보조) |
+| **2-a. 플래그십 — main (상위)** | **머리쓰기·설계·판단·수정** (대화하는 주 모델) | Opus / GPT-5.x / GLM-5.x | `main` (대화 Agent) |
+| **2-b. 플래그십 — 리뷰어 패널 (상위)** | **실질 적대 검증** (placeholder인가·미묘한 버그·설계 타당성) — main 과 *독립*(안티앵커링) | **claude · codex · glm-5.1** (다중 독립) | `sub` 의 reviewer 변형, but 플래그십 tier |
 
 **핵심**:
-- 작은 모델 = "여기 이상함" 까지 (지적). 고치는 건 큰 모델.
-- **큰 모델이 고칠 때도 반드시 cross-check** — 단독 수정 금지. 다른 모델/관점의 적대 검토를 거친다.
-- **맥락 소실 = 큰 위험** — 작은 모델에 수정을 위임하면 전체 맥락을 잃고 국소 변경으로 정합성을 깬다.
+- **형식 검증(레벨 0·1)과 실질 검증(레벨 2-b)을 가른다.** 기계로 판정 가능한 건 결정론/라이트로 싸게, 판단이 필요한 건 플래그십 적대 리뷰로. (→ `acceptance-criteria.md` 두 층.)
+- **리뷰어 = 플래그십, 독립 다중.** 검증은 고위험이라 강한 모델. main 과 분리해 앵커링 차단(`review-pass` §9, `acceptance-criteria.md` §2.1). 구현 = **`review-pass` 스킬(adk 레벨)**.
+- **라이트는 "지적"까지, 수정은 플래그십 + cross-check.** 작은 모델에 수정 위임 = 맥락 소실로 정합성 붕괴(큰 위험).
+- **크로스리뷰 로스터(2026-05-30)**: claude · codex · **glm-5.1**(opencode `openrouter/z-ai/glm-5.1`). gemini-CLI 제외(응답 5분+ 불안정 — 검증층은 timeout+graceful degradation 필요, `review-pass` §6.3/§7). Vertex 등 유료 API 는 속도·신뢰 필요 시 옵션.
+
+### Config SoT — `naia-settings/review.json`
+
+리뷰어 패널 + tier 정책의 **정본 config** = `naia-adk/naia-settings/review.json` (cross-repo SoT, `llm.json`(main/sub/embedded)의 형제). `tier_policy` + `reviewers[]`(플래그십 패널) + `stages`. `review-pass` 스킬과 naia-agent 가 소비. naia-settings 가 naia-agent·naia-os 설정 파일을 담는 구조 정합 — 프로젝트는 project-local `review-pass.yaml` 대신 이 정본을 가리킨다(또는 override). secret 은 `apiKeyRef`(이름)만.
 
 ## 실행 환경 가정 (단계별)
 
