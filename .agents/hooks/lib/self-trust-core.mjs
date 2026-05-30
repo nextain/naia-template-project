@@ -149,8 +149,11 @@ function globToRe(glob) {
 	for (let i = 0; i < g.length; i++) {
 		const ch = g[i];
 		if (ch === "*") {
-			if (g[i + 1] === "*") { re += ".*"; i++; } // **
-			else re += "[^/]*"; // *
+			if (g[i + 1] === "*") {
+				// **/ = 0개 이상 디렉터리(0개 포함, 표준 minimatch). ** 단독(끝/중간) = 모든 문자.
+				if (g[i + 2] === "/") { re += "(?:.*/)?"; i += 2; } // **/  (뒤 / 까지 소비)
+				else { re += ".*"; i++; } // **
+			} else re += "[^/]*"; // *
 		} else if (ch === "{") {
 			const end = g.indexOf("}", i);
 			if (end > i) { re += "(" + g.slice(i + 1, end).split(",").map(escapeRe).join("|") + ")"; i = end; }

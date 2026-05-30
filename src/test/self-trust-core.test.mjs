@@ -58,6 +58,15 @@ check("'closes #5' 증거 → 통과", checkCompletion("끝. closes #5", cfg).ok
 // off level
 check("enforcement off → 항상 통과", checkCompletion("완료", { ...cfg, level: "off" }).ok === true);
 
+// 글로브 **/ = 0개 이상 dir (최상위 src/*.c 도 매칭 — 사이클#5 드리프트 수정)
+{
+	const r = setupRoot({});
+	const c = { ...loadConfig(r), changeSetRules: [{ id: "p", when_changed_glob: ["src/**/*.c"], requires: ["docs/r.md"], exempt_glob: ["**/*.test.*"] }] };
+	check("src/**/*.c 가 최상위 src/main.c 매칭 (**/ =0dir)", checkSdlc(["src/main.c"], r, c).status !== "n/a");
+	check("src/**/*.c 가 중첩 src/x/y.c 매칭", checkSdlc(["src/x/y.c"], r, c).status !== "n/a");
+	check("**/*.test.* 가 최상위 foo.test.mjs exempt", checkSdlc(["foo.test.mjs"], r, c).status === "n/a");
+}
+
 // 증거 등급(tier) — 드리프트(placeholder가 키워드로 통과) 대응
 const tierCfg = { ...cfg, completion: { ...cfg.completion, strong_evidence_patterns: ["review-pass:", ".agents/reviews/", "acceptance:"] } };
 check("강한 증거(review-pass 인용) → tier=strong", checkCompletion("완료\n\nreview-pass: CLEAN (.agents/reviews/r-1.json)", tierCfg).tier === "strong");
