@@ -246,6 +246,15 @@
 				"closes #",
 				"resolves #",
 				"fixes #"
+			],
+			"_strong_evidence_comment": "강한 증거 = 재실행 가능한 검증 인용(review-pass 리포트 경로 / acceptance check 명령). 키워드(evidence_patterns)는 위조 가능 → 약한 증거로 advisory 경고. docs/acceptance-criteria.md 참조.",
+			"strong_evidence_patterns": [
+				"review-pass:",
+				"review-log",
+				".agents/reviews/",
+				"acceptance:",
+				"VERDICT=",
+				"CONFIRMED-resolved"
 			]
 		},
 		"change_set_rules": [
