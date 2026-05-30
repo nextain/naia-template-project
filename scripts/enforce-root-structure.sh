@@ -37,6 +37,18 @@ if [[ ! -f "$RULES_FILE" ]]; then
   exit 1
 fi
 
+# git repo 여부 — gitignore 된 루트 항목은 검사에서 스킵한다.
+# 근거: 구조 표준(F12/F13)은 **추적되는(committed) 트리**만 관할한다. gitignore 된 항목은
+#   의도적으로 추적 제외한 로컬 scratch(캐시·*.db·격리 실물 등)이고, 이를 --fix 로 삭제하면
+#   정당한 로컬 데이터가 날아간다(보존 우선 directive 위반). 시크릿은 별도(F-SEC01 + security.test).
+IS_GIT=false
+if command -v git &>/dev/null && git -C "$ROOT_DIR" rev-parse --is-inside-work-tree &>/dev/null; then
+  IS_GIT=true
+fi
+is_gitignored() {
+  [[ "$IS_GIT" == true ]] && git -C "$ROOT_DIR" check-ignore -q "$1" 2>/dev/null
+}
+
 # ── 화이트리스트 추출 (python3) ───────────────────────────────────────────────
 
 ALLOWED_DIRS=$(python3 - "$RULES_FILE" <<'PYEOF'
@@ -67,6 +79,8 @@ while IFS= read -r -d '' item; do
   # VCS 메타데이터(.git)는 항상 스킵 — 화이트리스트 무관, 절대 삭제 대상 아님.
   # (standalone repo면 .git=디렉토리, submodule이면 .git=gitfile이라 양쪽 스캔에 처리)
   if [[ "$name" == ".git" ]]; then continue; fi
+  # gitignore 된 로컬 디렉터리(캐시·격리 실물 등)는 표준 관할 밖 — 스킵(오삭제 방지)
+  if is_gitignored "$item"; then continue; fi
   # 화이트리스트에 있으면 통과
   if echo "$ALLOWED_DIRS" | grep -qx "$name"; then
     continue
@@ -78,6 +92,7 @@ done < <(find "$ROOT_DIR" -mindepth 1 -maxdepth 1 -type d -print0)
 while IFS= read -r -d '' item; do
   name="$(basename "$item")"
   if [[ "$name" == ".git" ]]; then continue; fi   # VCS 메타데이터 스킵 (submodule gitfile)
+  if is_gitignored "$item"; then continue; fi      # gitignore 된 로컬 파일(*.db·캐시 등) 스킵
   if echo "$ALLOWED_FILES" | grep -qx "$name"; then
     continue
   fi

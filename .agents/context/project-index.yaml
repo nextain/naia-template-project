@@ -35,6 +35,10 @@ on_demand_loading:
   active_issues:
     - file: .agents/progress/
       topics: [이슈, 진행중, SDLC]
+  quarantine:
+    - file: quarantine/MANIFEST.json
+      topics: [보류격리, 백업자산, 방치자산, quarantine]
+      note: "harden 이 보류 격리한 방치 의심 자산 목록(force-추적). 비어있지 않으면 백업 자산이 존재 — pending_notice 항목은 권한 유저 처분 대기. scripts/quarantine.mjs"
 
 # 컨텍스트 SoT 우선순위
 context_priority:

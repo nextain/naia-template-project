@@ -48,10 +48,11 @@
 			"examples",
 			"node_modules",
 			"packages",
+			"quarantine",
 			"scripts",
 			"src"
 		],
-		"note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | data-private = T3 보안(키/시크릿/개인정보) — 디렉터리는 허용하되 내용은 .gitignore (절대 추적 금지) | about-docs = 이 표준 repo 자체에 대한 메타 문서(설명·검증·실험). payload 아님 — project-create/migration 이 복제 제외",
+		"note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | data-private = T3 보안(키/시크릿/개인정보) — 디렉터리는 허용하되 내용은 .gitignore (절대 추적 금지) | about-docs = 이 표준 repo 자체에 대한 메타 문서(설명·검증·실험). payload 아님 — project-create/migration 이 복제 제외 | quarantine = 보류 격리(처분 6번째). 방치 의심 자산 백업. 실물은 gitignore, MANIFEST.json/README.md 만 추적. scripts/quarantine.mjs 관리 — quarantine_policy 참조",
 		"violation_action": "BLOCK — enforce-root-structure.sh --fix 가 삭제",
 		"status": "ACTIVE"
 	},
@@ -79,6 +80,21 @@
 		],
 		"note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | README.md = 이 repo 소개(복제 제외) / README.template.md = 새 프로젝트가 받는 skeleton(create·migration 이 README.md 로 사용)",
 		"violation_action": "BLOCK — enforce-root-structure.sh --fix 가 삭제",
+		"status": "ACTIVE"
+	},
+	"quarantine_policy": {
+		"description": "보류 격리(처분 6번째 방식). 마이그레이션(harden) 중 만난 방치 의심 자산(빌드 미연결 + 한두 커밋 뒤 방치된 스캐폴드/잔재이나 지금 지우기도 애매한 회색 자산)을 즉시 삭제/유지 강요 대신 quarantine/ 로 보류하고 정책 기록 후 사용자 처분.",
+		"manager": "scripts/quarantine.mjs (add|check|list|restore|extend|purge)",
+		"manifest": "quarantine/MANIFEST.json (force-추적 — 컨텍스트가 '백업 자산이 있었다'를 항상 인지)",
+		"storage": "quarantine/ 실물 = gitignore(추적 제외) | git rm --cached 로 격리 = 이력 보존 | purge 후에도 git history 잔존",
+		"default_retention_months": 3,
+		"compress_on_expiry": true,
+		"lifecycle": "active → (cron check 가 review_by 경과 검출) → 자동 tar.gz 압축(비파괴) → archived + pending_notice → (SessionStart hook quarantine-notice.js 가 첫 세션에 surface) → 권한 유저 질의 → purge(삭제)/extend(연장)/restore(복원)",
+		"invariants": [
+			"백그라운드(cron/verify-watch)는 검출·압축·보고만 — 자동 삭제 절대 금지 (보존 우선 directive 정합)",
+			"파괴(삭제 purge)는 사용자가 의도적으로 호출할 때만 — 첫 세션 진입 시 권한 유저가 결정",
+			"만료 자동 처리 = 압축까지만 (디스크 절약, 비파괴)"
+		],
 		"status": "ACTIVE"
 	},
 	"required_process_gate": {
