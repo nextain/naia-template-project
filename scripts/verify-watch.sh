@@ -30,9 +30,13 @@ BASELINE_FILE="$WORK_DIR/verify-baseline.txt"      # 승인된 위반 집합 = d
 INTERVAL="${VERIFY_WATCH_INTERVAL:-1800}"
 LOG_MAX_BYTES="${VERIFY_WATCH_LOG_MAX:-1048576}"
 DOCS_ENTRY="${VERIFY_DOCS_ENTRY:-README.md}"
-DOCS_EXEMPT="${VERIFY_DOCS_EXEMPT:-progress}"
+DOCS_EXEMPT="${VERIFY_DOCS_EXEMPT:-progress}"   # 공백 구분 다중 면제 dir 지원 (예: "progress reports archive")
 
 mkdir -p "$WORK_DIR"
+
+# 면제 디렉터리(공백 구분)를 --exempt 인자 배열로 — 프로젝트마다 작업기록 dir 가 여럿일 수 있다.
+EXEMPT_ARGS=()
+for _e in $DOCS_EXEMPT; do EXEMPT_ARGS+=(--exempt "$_e"); done
 
 # 모든 검출을 읽기 전용으로 실행하고, 위반 라인을 표준화해 정렬·중복제거한 집합으로 반환.
 run_checks() {
@@ -46,7 +50,7 @@ run_checks() {
   local d dres
   for d in docs about-docs; do
     [ -d "$ROOT_DIR/$d" ] || continue
-    dres="$(node "$SCRIPT_DIR/check-doc-graph.mjs" "$d" "$DOCS_ENTRY" --exempt "$DOCS_EXEMPT" 2>&1)" || true
+    dres="$(node "$SCRIPT_DIR/check-doc-graph.mjs" "$d" "$DOCS_ENTRY" "${EXEMPT_ARGS[@]}" 2>&1)" || true
     printf '%s\n' "$dres" | grep -E '^[[:space:]]+- ' | sed "s|^[[:space:]]*|[doc:$d] |" >>"$WORK_DIR/.vw_tmp" 2>/dev/null || true
   done
 
