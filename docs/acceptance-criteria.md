@@ -59,6 +59,8 @@
 | **약(weak)** | `Verified:`, `tests pass`, `coverage` (키워드만) | 통과하되 **advisory 경고** — 강한 증거 인용 권고 |
 | **없음** | 증거 0 | 차단 |
 
+> **⚠️ advisory 는 flagship-tier 전제 (2026-05-30 실측)**: advisory(비차단) 경고는 *acting agent 가 따라야* 효과가 있다. 플래그십 모델(claude·codex)은 advisory 를 따름(검증 실행 후 커밋 선택)이 실측됐으나, **약한 모델은 무시**(이전 실패 OC = "맞다 하고 행동 불변"). 따라서 **advisory-레벨 게이트는 main=flagship 일 때만 유효** — 약한 에이전트가 acting 이면 그 게이트는 `enforced`(차단)로 승격해야 한다. (위험 기반 게이트 ⊥ 에이전트 tier.)
+
 `completion-evidence-guard` 가 약한 증거만 있으면 "재실행 가능한 검증(review-pass 리포트/acceptance check)을 인용하라"고 **경고**한다(로컬=1차 마찰, CI=강제). 키워드는 위조되지만, 리포트 경로·검증 명령은 재실행으로 반증 가능하다.
 
 > **강한 증거 = 인용한 아티팩트가 실제 존재해야 인정** (적대검증 교훈, 2026-05-30). `review-pass: CLEAN` 텍스트만으론 부족 — 게이트가 인용된 리포트 경로(`*.json/md`, `.agents/reviews/...`)의 **파일 존재를 검증**한다. 인용했으나 파일이 없으면 위조 의심으로 약한 증거 강등. 위조하려면 리포트를 *실제로 만들어야* 한다(=검증을 돌려야 한다).
