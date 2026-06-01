@@ -39,6 +39,17 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agents/hooks/conform-gate.js"
+          }
+        ]
+      }
     ]
   }
 }
