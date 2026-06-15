@@ -54,11 +54,11 @@
 
 | 게이트 | 이름 | 산출물(deliverable) | 게이트 조건 |
 |--------|------|---------------------|------------|
-| P01 | 사용자 시나리오 | `docs/user-scenarios.md` UC 항목 | UC 없으면 다음 단계 금지 |
-| P02 | 테스트 시나리오 | Test Coverage Map 매핑 | 테스트 매핑 없으면 다음 단계 금지 |
-| P03 | 요구사항 | `docs/requirements.md` FR/NFR 항목 | 요구사항 없으면 코드 작성 금지 |
-| P04 | 통합 테스트 | 테스트 파일 또는 검증 결과 | 테스트 없으면 PR 머지 금지 |
-| P05 | 완료 | requirements.md 상태 → Done | 커밋 전 업데이트 필수 |
+| P01 | 사용자 시나리오 | `docs/progress/02.user-scenarios/INDEX.md` UC 항목 | UC 없으면 다음 단계 금지 |
+| P02 | 테스트 시나리오 | `docs/progress/03.uc-tests/INDEX.md` TEST-S 매핑 | 테스트 매핑 없으면 다음 단계 금지 |
+| P03 | 요구사항 | `docs/progress/01.requirements/INDEX.md` FR/NFR 항목 | 요구사항 없으면 코드 작성 금지 |
+| P04 | 통합 테스트 | 테스트 파일(`src/test`) 또는 검증 결과 | 테스트 없으면 PR 머지 금지 |
+| P05 | 완료 | `docs/progress/01.requirements/INDEX.md` 상태 → Done | 커밋 전 업데이트 필수 |
 
 **세션 규칙**:
 - 시작: `process-status.json` 읽기 → `last_updated` 갱신
@@ -83,11 +83,15 @@
 | 파일 | 역할 |
 |------|------|
 | `docs/project-structure.md` | 구조 명세 + 리소스 레지스트리 (헌장①) |
-| `docs/requirements.md` | 기능/비기능 요구사항 |
-| `docs/user-scenarios.md` | 사용자 시나리오 + 테스트 커버리지 맵 |
-| `docs/glossary.md` | 도메인 용어사전 |
-| `docs/ARCHITECTURE.md` | 시스템 아키텍처 |
+| `docs/progress/01.requirements/INDEX.md` | 기능/비기능 요구사항 (REQ registry) |
+| `docs/progress/02.user-scenarios/INDEX.md` | 사용자 시나리오 (UC registry) |
+| `docs/progress/03.uc-tests/INDEX.md` | 시나리오 테스트 (TEST-S registry) |
+| `docs/progress/04.features/INDEX.md` | 기능 설계 (SPEC registry) |
+| `docs/progress/05.features-tests/INDEX.md` | 기능 테스트 (TEST-F registry) |
+| `docs/glossary.md` | 도메인 용어사전 *(예정)* |
+| `docs/ARCHITECTURE.md` | 시스템 아키텍처 *(예정)* |
 
+> V모델 추적: REQ→UC→TEST-S, UC→SPEC→TEST-F. orphan/dead-link 검사 = `scripts/check-traceability.mjs` (기본 advisory).
 > 추가 시: 위 표에 먼저 등록 → `docs/project-structure.md` Doc Registry 업데이트.
 
 ---

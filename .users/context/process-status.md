@@ -12,7 +12,7 @@
 | 구조 명세 | [docs/project-structure.md](../../docs/project-structure.md) |
 | 규칙 SoT | [.agents/context/agents-rules.json](../context/agents-rules.json) |
 | 교훈 | [docs/lessons.md](../../docs/lessons.md) |
-| 이슈 문서 | [.agents/progress/](../progress/) |
+| 이슈 문서 | [docs/progress/99.dev-comm/](../../docs/progress/99.dev-comm/) |
 
 ---
 

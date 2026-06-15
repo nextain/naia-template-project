@@ -109,22 +109,22 @@
 			{
 				"id": "P01",
 				"name": "user_scenarios",
-				"description": "docs/user-scenarios.md에 해당 UC를 추가/업데이트. 누가, 무엇을, 왜 하는지.",
-				"deliverable": "docs/user-scenarios.md UC 항목",
+				"description": "docs/progress/02.user-scenarios/INDEX.md에 해당 UC를 추가/업데이트. 누가, 무엇을, 왜 하는지.",
+				"deliverable": "docs/progress/02.user-scenarios/INDEX.md UC 항목",
 				"gate": "UC 항목 없으면 다음 단계 금지"
 			},
 			{
 				"id": "P02",
 				"name": "test_scenarios",
-				"description": "UC에 대응하는 테스트 시나리오를 user-scenarios.md Test Coverage Map에 매핑.",
-				"deliverable": "docs/user-scenarios.md Test Coverage Map 항목",
+				"description": "UC에 대응하는 시나리오 테스트(TEST-S)를 docs/progress/03.uc-tests/INDEX.md에 매핑.",
+				"deliverable": "docs/progress/03.uc-tests/INDEX.md TEST-S 항목",
 				"gate": "테스트 파일명/그룹명 명시 없으면 다음 단계 금지"
 			},
 			{
 				"id": "P03",
 				"name": "requirements",
-				"description": "docs/requirements.md에 FR/NFR 항목 추가/업데이트 (상태: Pending).",
-				"deliverable": "docs/requirements.md FR/NFR 항목",
+				"description": "docs/progress/01.requirements/INDEX.md에 FR/NFR 항목 추가/업데이트 (상태: Draft).",
+				"deliverable": "docs/progress/01.requirements/INDEX.md FR/NFR 항목",
 				"gate": "요구사항 항목 없으면 코드 작성 금지"
 			},
 			{
@@ -137,8 +137,8 @@
 			{
 				"id": "P05",
 				"name": "requirements_complete",
-				"description": "작업 완료 후 requirements.md 상태 Done, process-status.json 게이트 done으로 업데이트.",
-				"deliverable": "requirements.md 상태 Done + process-status.json 전체 게이트 done",
+				"description": "작업 완료 후 docs/progress/01.requirements/INDEX.md 상태 Done, process-status.json 게이트 done으로 업데이트.",
+				"deliverable": "docs/progress/01.requirements/INDEX.md 상태 Done + process-status.json 전체 게이트 done",
 				"gate": "커밋 전 상태 업데이트 필수"
 			}
 		]
@@ -266,8 +266,8 @@
 					"src/main/**"
 				],
 				"requires": [
-					"docs/user-scenarios.md",
-					"docs/requirements.md"
+					"docs/progress/02.user-scenarios/INDEX.md",
+					"docs/progress/01.requirements/INDEX.md"
 				],
 				"exempt_glob": [
 					"**/*.test.*",
