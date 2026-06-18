@@ -113,7 +113,8 @@
 				"resource_registry + F12/F13 — 루트 디렉토리/파일 화이트리스트, 미등록=BLOCK",
 				"F-SEC01 — 추적 경로 시크릿/개인정보 금지"
 			],
-			"bootstrap_gate": "위 불변식이 신규 레포 day-0부터 ACTIVE인지 확인한 뒤에 P01(기능 인도)을 시작한다. 권한 모델이 비어 있으면 기능 작업 금지."
+			"ask_category": "위 already_enforced_as_invariants는 deny/BLOCK 계열(상시-on). ask 계열(승인 필요 고위험 행동)은 charter_immutability(헌장 수정 시 사용자 승인) + forbidden_actions의 승인 요구로 커버. 신규 레포는 자기 도메인의 고위험 ask 행동(배포·외부 발송·과금 등)을 추가 정의한다.",
+			"bootstrap_gate": "deny 계열(F01/F12/F13/F-SEC01)과 ask 계열(위 ask_category)이 신규 레포 day-0부터 정의·ACTIVE인지 확인한 뒤에 P01(기능 인도)을 시작한다. 권한 모델(deny+ask)이 비어 있으면 기능 작업 금지."
 		},
 		"steps": [
 			{
