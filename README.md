@@ -1,60 +1,128 @@
 # naia-template-project
 
-**naia 표준 프로젝트 템플릿 + AI self-trust 하네스 base.**
+새 프로젝트를 시작할 때 그대로 복제해서 쓰는 표준 골격입니다. 여기에 더해, AI가 프로젝트
+규칙을 어기지 못하도록 막는 **self-trust 하네스**(스스로를 신뢰할 수 있게 만드는 안전장치)가 들어 있습니다.
 
-새 프로젝트는 이 repo 를 복제해 시작하고(`project-create`), 기존 프로젝트는 이 표준으로 정리한다(`project-migration`).
-핵심은 **AI 가 규칙을 알고 지키도록 강제하는 하네스** — 루트 구조 화이트리스트(F12/F13), 헌장 불변,
-SDLC 게이트, 문서 고립 방지, `.agents↔.users` 미러, 그리고 이 모든 걸 검증하는 self-trust 테스트.
+보통 프로젝트 규칙은 문서에 적어 둡니다. 하지만 문서에 적힌 규칙은 사람도, AI도 잊거나
+슬쩍 벗어나기 쉽습니다. 이 템플릿은 규칙을 문서가 아니라 **실행되는 게이트**로 만듭니다.
+벽에 붙여 둔 주의문 대신 문에 달아 둔 자물쇠라고 생각하면 됩니다. 새 프로젝트는 그 자물쇠
+한 벌을 통째로 물려받습니다.
 
-## 이 repo 의 두 역할
+## 이 repo 는 스킬이 소비하는 재료입니다 (먼저 읽어 주세요)
 
-| 역할 | 무엇 | 위치 |
-|------|------|------|
-| **payload (복제되는 것)** | 새 프로젝트가 받는 표준 자산 — 진입점·표준 문서·검증 스크립트·하네스 테스트 | `AGENTS.md`(+미러), `docs/`, `scripts/`, `src/test/`, `.github/`, `README.template.md` |
-| **이 repo 자체 (복제 안 됨)** | 표준 자체에 대한 설명·설계·실험·검증 기록 | 이 `README.md`, `about-docs/` |
+이 repo 를 clone 했다고 해서 바로 새 프로젝트를 찍어 낼 수 있는 것은 아닙니다.
+실제로 프로젝트를 만들고 정리하는 도구는 **상위 워크스페이스**에 있습니다.
 
-> `project-create`/`project-migration` 은 **`README.md` 와 `about-docs/` 를 복제하지 않는다.**
-> 새 프로젝트의 README 는 `README.template.md`(placeholder skeleton)로 생성된다.
+- `project-create` — 이 repo 를 복제해 새 프로젝트를 만드는 스킬
+- `project-migration` — 기존 프로젝트를 이 표준에 맞춰 정리하는 스킬
 
-## 사용
+두 스킬은 이 repo 안이 아니라 워크스페이스 루트의 `.agents/skills/`
+(에디터에서는 `.claude/skills/` 로 연결) 에 있습니다. 즉 이 template repo 는 **그 스킬이
+읽어 가는 재료(payload)** 이고, 스킬 자체는 워크스페이스가 들고 있습니다. template repo 만
+따로 clone 하면 스킬은 딸려 오지 않습니다.
 
-- **새 프로젝트**: `project-create` 스킬 — 이 repo 를 복제 → placeholder 치환 → `README.template.md`→`README.md` → `about-docs/` 제거.
-- **기존 프로젝트 정리**: `project-migration` 스킬(harden) — 표준 자산 도입 → 구조/문서/미러 정합 → 검증 0 violation → 주기 검증 활성화.
+## 무엇이 들어 있나
 
-## payload 표준 문서 (새 프로젝트가 받음)
+아래는 모두 실제 스크립트와 테스트로 검증되는 것들입니다. 문서로만 존재하는 약속이
+아니라 어기면 신호가 울리거나 편집이 막힙니다.
 
-색인: [`docs/README.md`](./docs/README.md)
+- **루트 구조 화이트리스트.** 루트에 만들어도 되는 폴더와 파일 목록이 정해져 있고,
+  목록에 없는 것을 만들면 `scripts/enforce-root-structure.sh` 가 잡아냅니다. 규칙 번호로는
+  폴더가 F12, 파일이 F13 입니다(F = 금지/필수 규칙 번호 매김).
+- **SDLC 게이트.** 기능을 만들 때 사용자 시나리오 → 테스트 시나리오 → 요구사항 → 통합
+  테스트 → 완료 순서를 건너뛰지 못하게 막습니다. 각 단계에 P01부터 P05까지 번호가
+  붙어 있습니다(SDLC = 소프트웨어 개발 수명주기).
+- **헌장 불변.** 프로젝트의 근간이 되는 파일(진입점 문서, 규칙 파일 등)은 AI가 혼자
+  바꾸지 못합니다. 바꾸려면 사람의 명시적 승인이 필요합니다.
+- **시크릿 격리.** 열쇠·비밀번호 같은 민감 정보는 `data-private/` 로 분리하고, 추적하면
+  안 되는 경로를 위협 모델 문서로 못박아 둡니다.
+- **계약↔코드 드리프트 게이트.** 파일을 편집할 때마다 도는 검문소이지만, 갓 복제한
+  상태에서는 조용합니다. 어떤 계약(헤더)과 코드(소스)를 짝지어 감시할지
+  `scripts/conform/manifest.json` 에 적어 두면 그때부터 작동합니다. 등록한 뒤에는
+  선언한 계약과 실제 코드가 어긋나면 알려 주고, 고치지 않고 계속 편집하면 막습니다.
+  LLM을 부르지 않아 토큰을 전혀 쓰지 않습니다.
+- **self-trust 테스트.** 위 장치들이 실제로 작동하는지 스스로 검증하는 테스트 묶음
+  (`src/test/*.test.mjs`) 이 함께 옵니다.
+
+## 왜 이렇게까지 하나
+
+AI에게 "이 규칙을 지켜"라고 문서로 부탁하면, 긴 작업 도중 조용히 규칙에서 벗어나
+틀린 토대 위에 몇 시간씩 코드를 쌓는 일이 생깁니다. 표면적인 검사는 통과하는데
+실제로는 계약과 갈라진 "가짜 성공"이 대표적입니다.
+
+그래서 이 템플릿은 판단을 AI의 선의에 맡기지 않습니다. 결정론적인 스크립트와 훅,
+테스트가 AI 작업 루프 **바깥에서** 규칙 위반을 들이받아 삽질을 끊습니다. 새 프로젝트는
+이 판단 장치를 규칙 문서가 아니라 실행 가능한 형태로 물려받으므로, 문서를 읽지 않아
+생기는 이탈이 원천적으로 줄어듭니다.
+
+## 구조
+
+이 repo 는 성격이 다른 두 묶음으로 나뉩니다. 하나는 새 프로젝트가 받아 갈 재료이고,
+다른 하나는 이 표준 자체를 설명하는 기록입니다. 구분이 중요합니다. `project-create`/
+`project-migration` 은 **재료만 복제하고, 설명 문서는 복제하지 않습니다.**
+
+새 프로젝트가 받아 가는 재료(payload):
+
+- `AGENTS.md` (와 미러 `CLAUDE.md`·`GEMINI.md`·`OPENCODE.md`·`CODEX.md`) — 프로젝트 진입점.
+  하나(`AGENTS.md`)가 원본(SoT, 단일 진리 출처)이고 나머지는 자동 동기화된 사본입니다.
+- `README.template.md` — 새 프로젝트의 README 로 쓰일 빈 골격. `{{PLACEHOLDER}}` 자리는
+  프로젝트 생성 시 채워집니다.
+- `docs/` — 새 프로젝트가 받는 표준 문서(구조 표준, 위협 모델, LLM 역할 분담 등).
+- `scripts/` — 구조·문서·미러 이탈을 검사하는 검증 스크립트.
+- `src/test/` — 하네스가 실제로 작동하는지 확인하는 self-trust 테스트.
+- `.agents/`, `.github/` — 훅·규칙·CI 설정.
+
+이 repo 자체를 설명하는 기록(복제되지 않음):
+
+- 이 `README.md` — 이 repo 를 어떻게 쓰는지에 대한 소개.
+- `about-docs/` — 표준이 왜 이렇게 생겼는지, 어떤 교훈에서 나왔는지, 검증은 어떻게
+  했는지에 대한 메타 기록.
+
+처음 열어 볼 곳은 payload 쪽 진입점인 `AGENTS.md` 와 문서 색인 `docs/README.md` 입니다.
+
+## 시작하기
+
+이 repo 를 직접 다룰 일은 대개 하네스가 잘 도는지 검증하는 것입니다.
+빌드 도구 없이 Node 만 있으면 됩니다.
+
+self-trust 테스트를 모두 돌리기:
+
+```bash
+for t in src/test/*.test.mjs; do node "$t"; done
+```
+
+현재 17개 테스트 파일이 모두 통과합니다(핵심 파일 `self-trust-core.test.mjs` 는 41개 검사 통과).
+
+구조·문서·미러 이탈을 한 번에 검사하기:
+
+```bash
+bash scripts/verify-watch.sh once
+```
+
+위반이 0이면 정상입니다. 새 위반이 잡히면 무엇이 등록되지 않았는지 알려 줍니다.
+
+새 프로젝트를 실제로 만들거나 기존 프로젝트를 이 표준으로 정리하려면, 이 repo 를
+직접 만지지 말고 상위 워크스페이스의 `project-create` / `project-migration` 스킬을
+쓰세요. 그 스킬이 이 repo 를 재료로 읽어 갑니다.
+
+## 더 읽을거리
+
+한꺼번에 다 볼 필요는 없습니다. 필요할 때 아래를 참고하세요.
+
+payload 표준 문서(새 프로젝트가 받는 것):
+
+- [문서 색인](./docs/README.md)
 - [프로젝트 구조 표준 (F12/F13)](./docs/project-structure.md)
 - [위협 모델 — 보안 경계·시크릿 격리](./docs/threat-model.md)
-- [LLM 역할 분담 (작은 모델 ↔ 큰 모델)](./docs/llm-roles.md)
+- [LLM 역할 분담 (작은 모델과 큰 모델)](./docs/llm-roles.md)
+- [계약↔코드 드리프트 게이트 상세](./scripts/conform/README.md)
 
-## 계약↔코드 conform 게이트 (payload — 새 프로젝트가 받음)
+이 표준 자체에 대한 기록(복제되지 않음):
 
-**무슨 기능**: 매 파일 편집 후 자동으로 도는 **결정론 드리프트 검문소**(LLM 없음, **0 토큰**).
-선언된 계약(헤더)과 실제 코드가 어긋나면 즉시 알리고, 안 고치고 3번 더 편집하면 **차단**한다.
-
-**무엇을 방지**: AI가 **드리프트된 채 몇 시간씩 루프**하는 것 — 커밋·리뷰도 안 하고 틀린
-토대 위에 코드를 계속 쌓는(진짜 토큰 폭발) 상황. 신호가 AI 루프 *밖*에서 들이박아 삽질을
-끊는다. 표면 게이트는 통과하는데 계약과 조용히 분기한 가짜 성공(naia-144 `daf35d0`류)을 잡는다.
-
-**소스**: `scripts/conform/{oracle,check,manifest}.py/.json` + `.agents/hooks/conform-gate.js`
-(PostToolUse, `.claude/settings.json` 등록). 상세: [`scripts/conform/README.md`](./scripts/conform/README.md).
-
-**켜는 법**: `scripts/conform/manifest.json`에 계약(header)/코드(source) 영역을 적으면 켜짐.
-**비어 있으면 무동작**(새 프로젝트 기본 = 오탐 0). 번들 추출기는 C — 다른 언어는 `extract()` 교체.
-
-## 이 표준에 대한 문서 (about-docs/ — 복제 안 됨)
-
-색인: [`about-docs/README.md`](./about-docs/README.md)
+- [about-docs 색인](./about-docs/README.md)
 - [배운 교훈 — 규칙이 존재하는 이유](./about-docs/lessons.md)
-- [마이그레이션 검증 기록 (누적 ledger)](./about-docs/migration-verification.md)
-- [설계·실험·검토 기록](./about-docs/progress/)
+- [마이그레이션 검증 기록](./about-docs/migration-verification.md)
 
-## 검증
+## 라이선스
 
-루트에서 `bash scripts/verify-watch.sh once` — 구조·문서·미러 이탈을 한 번에 검출(위반 0 이 정상).
-하네스 self-trust 테스트: `for t in src/test/*.test.mjs; do node "$t"; done`.
-
-## License
-
-Apache License 2.0 (`LICENSE`).
+Apache License 2.0. 전문은 [`LICENSE`](./LICENSE) 를 참고하세요.
