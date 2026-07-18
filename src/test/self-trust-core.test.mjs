@@ -169,6 +169,26 @@ const receipt = (targets, production_files = ["src/main/a.js"]) => JSON.stringif
 	check("30자 이상 혼합 N/A placeholder → violation", result.status === "violation" && result.reasons.some((reason) => reason.includes("repeat a placeholder")));
 }
 {
+	const separatedPlaceholders = "not relevant / none / not applicable";
+	const targets = {
+		repository_docs: { status: "N/A", rationale: separatedPlaceholders },
+		user_manual: { status: "N/A", rationale: separatedPlaceholders },
+		reusable_learning: { status: "N/A", rationale: separatedPlaceholders },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets) });
+	check("구분자로 연결한 N/A placeholder → violation", checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r)).status === "violation");
+}
+{
+	const concatenatedPlaceholders = "not relevantnone not applicable none";
+	const targets = {
+		repository_docs: { status: "N/A", rationale: concatenatedPlaceholders },
+		user_manual: { status: "N/A", rationale: concatenatedPlaceholders },
+		reusable_learning: { status: "N/A", rationale: concatenatedPlaceholders },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets) });
+	check("붙여 쓴 N/A placeholder → violation", checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r)).status === "violation");
+}
+{
 	const concreteRationale = "Not relevant to users because this test-only change does not alter setup, operation, or limitations.";
 	const targets = {
 		repository_docs: { status: "N/A", rationale: concreteRationale },
