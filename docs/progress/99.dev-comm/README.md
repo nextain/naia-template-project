@@ -31,5 +31,5 @@
 - `UPDATED`: evidence 중 하나 이상이 이번 diff의 로컬 파일이거나 40~64자리 커밋 해시가 있는 외부 URL이어야 합니다.
 - `production_files`: 이번 diff에서 gate를 trigger한 production 파일 전부와 정확히 같아야 합니다.
 - 로컬 evidence는 대상별 설정 경로와 일치해야 하고, 같은 evidence를 여러 대상에 재사용할 수 없습니다.
-- `N/A`: 구체적인 비적용 이유를 적습니다. `PENDING`, 대상 누락, 짧은 placeholder는 실패합니다.
+- `N/A`: 구체적인 비적용 이유를 적습니다. `PENDING`, 대상 누락, 짧거나 반복된 placeholder는 실패합니다.
 - 파일명의 이슈 번호와 `issue` 값이 같아야 하며, symlink receipt는 허용하지 않습니다.

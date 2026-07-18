@@ -27,6 +27,7 @@ const CONFIG = {
 			reusable_learning: ["AGENTS.md", "docs/lessons/**"],
 		},
 		na_rationale_min_chars: 30,
+		na_rationale_placeholder_phrases: ["not relevant", "not applicable", "no impact", "none", "n/a", "관련 없음", "해당 없음", "없음"],
 	},
 	artifact_min_meaningful_chars: 100,
 };
@@ -144,6 +145,17 @@ const receipt = (targets, production_files = ["src/main/a.js"]) => JSON.stringif
 	const r = setupRoot({ [receiptPath]: receipt(targets), "README.md": LONG });
 	const result = checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r));
 	check("대상 누락·짧은 N/A·diff 밖 local evidence → violation", result.status === "violation" && result.reasons.length >= 3);
+}
+{
+	const repeatedPlaceholder = "not relevant not relevant not relevant";
+	const targets = {
+		repository_docs: { status: "N/A", rationale: repeatedPlaceholder },
+		user_manual: { status: "N/A", rationale: repeatedPlaceholder },
+		reusable_learning: { status: "N/A", rationale: repeatedPlaceholder },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets) });
+	const result = checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r));
+	check("30자 이상 반복 N/A placeholder → violation", result.status === "violation" && result.reasons.some((reason) => reason.includes("repeat a placeholder")));
 }
 {
 	const targets = {
