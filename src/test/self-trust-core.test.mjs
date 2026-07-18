@@ -158,6 +158,27 @@ const receipt = (targets, production_files = ["src/main/a.js"]) => JSON.stringif
 	check("30자 이상 반복 N/A placeholder → violation", result.status === "violation" && result.reasons.some((reason) => reason.includes("repeat a placeholder")));
 }
 {
+	const mixedPlaceholders = "not relevant none not applicable";
+	const targets = {
+		repository_docs: { status: "N/A", rationale: mixedPlaceholders },
+		user_manual: { status: "N/A", rationale: mixedPlaceholders },
+		reusable_learning: { status: "N/A", rationale: mixedPlaceholders },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets) });
+	const result = checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r));
+	check("30자 이상 혼합 N/A placeholder → violation", result.status === "violation" && result.reasons.some((reason) => reason.includes("repeat a placeholder")));
+}
+{
+	const concreteRationale = "Not relevant to users because this test-only change does not alter setup, operation, or limitations.";
+	const targets = {
+		repository_docs: { status: "N/A", rationale: concreteRationale },
+		user_manual: { status: "N/A", rationale: concreteRationale },
+		reusable_learning: { status: "N/A", rationale: concreteRationale },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets) });
+	check("placeholder phrase를 포함한 구체적 설명 → ok", checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r)).status === "ok");
+}
+{
 	const targets = {
 		repository_docs: { status: "PENDING" },
 		user_manual: { status: "N/A", rationale: "There is no user-visible setup, operation, or limitation change in this test-only update." },

@@ -213,11 +213,22 @@ function normalizeRationale(value) {
 
 function isPlaceholderRationale(rationale, phrases = []) {
 	const normalized = normalizeRationale(rationale);
-	return phrases.some((phrase) => {
-		const placeholder = normalizeRationale(String(phrase));
-		if (!placeholder) return false;
-		return normalized.split(placeholder).join(" ").replace(/\s+/g, " ").trim() === "";
-	});
+	if (!normalized) return false;
+	const tokens = normalized.split(" ");
+	const placeholders = phrases
+		.map((phrase) => normalizeRationale(String(phrase)).split(" ").filter(Boolean))
+		.filter((phraseTokens) => phraseTokens.length > 0)
+		.sort((a, b) => b.length - a.length);
+	let removed = false;
+	for (let index = 0; index < tokens.length;) {
+		const match = placeholders.find(
+			(phraseTokens) => phraseTokens.every((token, offset) => tokens[index + offset] === token),
+		);
+		if (!match) return false;
+		removed = true;
+		index += match.length;
+	}
+	return removed;
 }
 
 // Documentation impact: production changes must carry one changed, per-issue receipt.
