@@ -12,7 +12,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const HOOK = resolve(__dirname, "../../.agents/hooks/completion-evidence-guard.js");
 
-function setupRoot(level = "enforced") {
+function setupRoot(level = "enforced", documentationGate = false) {
 	const d = mkdtempSync(join(tmpdir(), "m4-"));
 	const rules = {
 		self_trust_config: {
@@ -22,6 +22,13 @@ function setupRoot(level = "enforced") {
 				negations: ["미완료", "incomplete", "WIP", "wip"],
 				evidence_patterns: ["Verified:", "Evidence:", "closes #", "sha256"],
 			},
+			documentation_impact_gate: documentationGate ? {
+				enabled: true,
+				when_changed_glob: ["src/main/**"],
+				receipt_glob: "docs/progress/99.dev-comm/issue-*-documentation-impact.json",
+				required_targets: ["repository_docs", "user_manual", "reusable_learning"],
+				na_rationale_min_chars: 30,
+			} : { enabled: false },
 		},
 	};
 	const rp = join(d, ".agents/context/agents-rules.json");
@@ -55,6 +62,16 @@ check("완료선언 없음(wip) → 통과", runHook(enforced, `git commit -m "w
 check("'미완료' 부정문 → 통과", runHook(enforced, `git commit -m "로그인 미완료"`).blocked === false);
 check("CLEAN+증거없음 → 차단", runHook(enforced, `git commit -m "all pass, CLEAN"`).blocked === true);
 check("git commit 아님 → 통과", runHook(enforced, `ls -la`).blocked === false);
+
+// Documentation impact is checked for every commit, independent of completion keywords.
+{
+	const r = setupRoot("enforced", true);
+	mkdirSync(join(r, "src/main"), { recursive: true });
+	writeFileSync(join(r, "src/main/a.js"), "export const a = 1;\n");
+	spawnSync("git", ["init"], { cwd: r });
+	spawnSync("git", ["add", "src/main/a.js"], { cwd: r });
+	check("완료 키워드 없는 커밋도 production 변경 + receipt 없음 → 차단", runHook(r, `git commit -m "feat: add a"`).blocked === true);
+}
 
 // enforcement level
 check("advisory: 완료+증거없음 → 차단 아님(경고만)", (() => { const r = runHook(setupRoot("advisory"), `git commit -m "완료"`); return r.blocked === false && r.advisory === true; })());

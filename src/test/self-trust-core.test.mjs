@@ -3,7 +3,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync } from "fs";
 import { tmpdir } from "os";
 import { join, dirname } from "path";
-import { loadConfig, checkCompletion, checkSdlc, checkStructure, normalizeRel, isCharterFile, extractEvidenceRefs } from "../../.agents/hooks/lib/self-trust-core.mjs";
+import { loadConfig, checkCompletion, checkDocumentationImpact, checkSdlc, checkStructure, normalizeRel, isCharterFile, extractEvidenceRefs } from "../../.agents/hooks/lib/self-trust-core.mjs";
 
 const CONFIG = {
 	enforcement_level: "enforced",
@@ -15,6 +15,19 @@ const CONFIG = {
 	change_set_rules: [
 		{ id: "src", when_changed_glob: ["src/main/**", "src/**/*.{js,py}"], requires: ["docs/user-scenarios.md", "docs/requirements.md"], exempt_glob: ["**/*.test.*", "docs/**"] },
 	],
+	documentation_impact_gate: {
+		enabled: true,
+		when_changed_glob: ["src/main/**"],
+		exempt_glob: ["**/*.test.*"],
+		receipt_glob: "docs/progress/99.dev-comm/issue-*-documentation-impact.json",
+		required_targets: ["repository_docs", "user_manual", "reusable_learning"],
+		target_evidence_glob: {
+			repository_docs: ["README.md", "docs/**"],
+			user_manual: ["docs/manual/**", ".users/**"],
+			reusable_learning: ["AGENTS.md", "docs/lessons/**"],
+		},
+		na_rationale_min_chars: 30,
+	},
 	artifact_min_meaningful_chars: 100,
 };
 const LONG = "x".repeat(120);
@@ -103,6 +116,120 @@ check("docs만 변경 → n/a", checkSdlc(["docs/x.md", "README.md"], empty, cfg
 	check("UC만(부분) → violation", checkSdlc(["src/main/a.js"], partial, loadConfig(partial)).status === "violation");
 }
 check("min_chars 미달(짧은 산출물) → bootstrap 취급", checkSdlc(["src/main/a.js"], setupRoot({ "docs/user-scenarios.md": "짧음", "docs/requirements.md": "짧음" }), cfg).status === "bootstrap");
+
+// Documentation impact receipt — every audience must be decided with verifiable evidence.
+const receiptPath = "docs/progress/99.dev-comm/issue-42-documentation-impact.json";
+const receipt = (targets, production_files = ["src/main/a.js"]) => JSON.stringify({
+	schema_version: 1,
+	issue: 42,
+	production_files,
+	targets,
+});
+{
+	const targets = {
+		repository_docs: { status: "UPDATED", evidence: ["docs/requirements.md"] },
+		user_manual: { status: "N/A", rationale: "This internal behavior has no user-facing setup or operation change." },
+		reusable_learning: { status: "UPDATED", evidence: ["https://github.com/nextain/book/commit/1234567890abcdef1234567890abcdef12345678"] },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets), "docs/requirements.md": LONG });
+	const files = ["src/main/a.js", receiptPath, "docs/requirements.md"];
+	check("세 대상 UPDATED/N/A + 변경/고정 증거 → ok", checkDocumentationImpact(files, r, loadConfig(r)).status === "ok");
+	check("프로덕션 변경 + receipt 미변경 → violation", checkDocumentationImpact(["src/main/a.js", "docs/requirements.md"], r, loadConfig(r)).status === "violation");
+}
+{
+	const targets = {
+		repository_docs: { status: "UPDATED", evidence: ["README.md"] },
+		user_manual: { status: "N/A", rationale: "짧음" },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets), "README.md": LONG });
+	const result = checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r));
+	check("대상 누락·짧은 N/A·diff 밖 local evidence → violation", result.status === "violation" && result.reasons.length >= 3);
+}
+{
+	const targets = {
+		repository_docs: { status: "PENDING" },
+		user_manual: { status: "N/A", rationale: "There is no user-visible setup, operation, or limitation change in this test-only update." },
+		reusable_learning: { status: "N/A", rationale: "The change adds no reusable principle and only updates an existing fixture value." },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets) });
+	check("가짜 상태 PENDING → violation", checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r)).status === "violation");
+	check("테스트 전용 변경 → n/a", checkDocumentationImpact(["src/main/a.test.js"], r, loadConfig(r)).status === "n/a");
+}
+{
+	const targets = {
+		repository_docs: { status: "UPDATED", evidence: ["https://github.com/nextain/docs/commit/1234567"] },
+		user_manual: { status: "N/A", rationale: "There is no user-facing setup or operation change in this internal-only update." },
+		reusable_learning: { status: "N/A", rationale: "No reusable engineering lesson was introduced by this narrowly scoped internal update." },
+	};
+	const wrongIssuePath = "docs/progress/99.dev-comm/issue-41-documentation-impact.json";
+	const r = setupRoot({ [wrongIssuePath]: receipt(targets) });
+	const result = checkDocumentationImpact(["src/main/a.js", wrongIssuePath], r, loadConfig(r));
+	check("filename/issue 불일치 + 짧은 commit SHA → violation", result.status === "violation" && result.reasons.length >= 2);
+}
+{
+	const targets = {
+		repository_docs: { status: "UPDATED", evidence: ["AGENTS.md"] },
+		user_manual: { status: "UPDATED", evidence: ["AGENTS.md"] },
+		reusable_learning: { status: "UPDATED", evidence: ["AGENTS.md"] },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets), "AGENTS.md": LONG });
+	const result = checkDocumentationImpact(["src/main/a.js", "AGENTS.md", receiptPath], r, loadConfig(r));
+	check("대상 경로가 틀리고 같은 evidence 재사용 → violation", result.status === "violation" && result.reasons.some((x) => x.includes("reused")));
+}
+{
+	const targets = {
+		repository_docs: { status: "UPDATED", evidence: ["docs/requirements.md"] },
+		user_manual: { status: "N/A", rationale: "There is no user-facing setup or operation change in this internal-only update." },
+		reusable_learning: { status: "N/A", rationale: "No reusable engineering lesson was introduced by this internal-only update." },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets, ["src/main/other.js"]), "docs/requirements.md": LONG });
+	check("production_files가 실제 변경 source와 다름 → violation", checkDocumentationImpact(["src/main/a.js", "docs/requirements.md", receiptPath], r, loadConfig(r)).status === "violation");
+}
+{
+	const targets = {
+		repository_docs: { status: "UPDATED", evidence: ["docs/lessons/a.md"] },
+		user_manual: { status: "N/A", rationale: "There is no user-facing operation, setup, privacy, or limitation change in this update." },
+		reusable_learning: { status: "UPDATED", evidence: ["./docs/lessons/a.md"] },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets), "docs/lessons/a.md": LONG });
+	const result = checkDocumentationImpact(["src/main/a.js", "docs/lessons/a.md", receiptPath], r, loadConfig(r));
+	check("같은 local evidence의 ./ alias 재사용 → violation", result.status === "violation" && result.reasons.some((x) => x.includes("reused")));
+}
+{
+	const commit = "https://github.com/nextain/docs/commit/1234567890abcdef1234567890abcdef12345678";
+	const targets = {
+		repository_docs: { status: "UPDATED", evidence: [`${commit}#readme`] },
+		user_manual: { status: "N/A", rationale: "There is no user-facing operation, setup, privacy, or limitation change in this update." },
+		reusable_learning: { status: "UPDATED", evidence: [`${commit}#chapter`] },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets) });
+	const result = checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r));
+	check("같은 external commit의 fragment alias 재사용 → violation", result.status === "violation" && result.reasons.some((x) => x.includes("reused")));
+}
+{
+	const targets = {
+		repository_docs: { status: "UPDATED", evidence: ["docs/requirements.md", "not-in-diff.md"] },
+		user_manual: { status: "N/A", rationale: "There is no user-facing operation, setup, privacy, or limitation change in this update." },
+		reusable_learning: { status: "N/A", rationale: "No reusable engineering lesson was introduced by this internal-only update." },
+	};
+	const r = setupRoot({ [receiptPath]: receipt(targets), "docs/requirements.md": LONG });
+	check("valid evidence 하나가 invalid extra를 숨기지 못함", checkDocumentationImpact(["src/main/a.js", "docs/requirements.md", receiptPath], r, loadConfig(r)).status === "violation");
+}
+{
+	const r = setupRoot();
+	const target = join(r, "outside-receipt.json");
+	writeFileSync(target, receipt({
+		repository_docs: { status: "UPDATED", evidence: ["src/main/a.js"] },
+		user_manual: { status: "N/A", rationale: "No user-facing behavior or documentation is changed by this internal implementation." },
+		reusable_learning: { status: "N/A", rationale: "No reusable or non-duplicative engineering lesson is introduced by this implementation." },
+	}));
+	const link = join(r, receiptPath);
+	mkdirSync(dirname(link), { recursive: true });
+	let made = false;
+	try { symlinkSync(target, link); made = true; } catch {}
+	if (made) check("symlink receipt → violation", checkDocumentationImpact(["src/main/a.js", receiptPath], r, loadConfig(r)).status === "violation");
+	else console.log("⏭️  SKIP — receipt symlink 생성 권한 없음");
+}
 
 // checkStructure
 check("src/x.js (F12 허용) → 위반0", checkStructure(["src/x.js"], root, cfg).length === 0);

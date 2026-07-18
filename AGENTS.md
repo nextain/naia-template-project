@@ -58,7 +58,17 @@
 | P02 | 테스트 시나리오 | `docs/progress/03.uc-tests/INDEX.md` TEST-S 매핑 | 테스트 매핑 없으면 다음 단계 금지 |
 | P03 | 요구사항 | `docs/progress/01.requirements/INDEX.md` FR/NFR 항목 | 요구사항 없으면 코드 작성 금지 |
 | P04 | 통합 테스트 | 테스트 파일(`src/test`) 또는 검증 결과 | 테스트 없으면 PR 머지 금지 |
-| P05 | 완료 | `docs/progress/01.requirements/INDEX.md` 상태 → Done | 커밋 전 업데이트 필수 |
+| P05 | 완료 | 요구사항 Done + 이슈별 문서 영향 receipt | 커밋 전 두 증적 검증 필수 |
+
+프로덕션 소스 변경은 `docs/progress/99.dev-comm/issue-*-documentation-impact.json`에 세 독자층을 모두 판정한다.
+
+- `repository_docs`: 공개 동작·계약·구조·검증을 설명하는 저장소 문서
+- `user_manual`: 사용자가 설정하고 조작하며 한계를 이해하는 사용법
+- `reusable_learning`: 다른 프로젝트에도 재사용할 수 있는 근거 기반 교훈
+- 각 값은 `UPDATED`(이번 변경 파일 또는 immutable commit URL 증거)나 `N/A`(구체적 비적용 근거)만 허용한다.
+- `production_files`는 gate를 trigger한 이번 production 변경 파일 전부와 정확히 같아야 한다.
+- 로컬 evidence는 대상별 허용 경로에 있어야 하며, 같은 evidence를 여러 대상에 재사용할 수 없다.
+- receipt가 이번 변경에 포함되지 않거나 대상이 빠지면 로컬 커밋 훅과 CI가 차단한다.
 
 **세션 규칙**:
 - 시작: `process-status.json` 읽기 → `last_updated` 갱신

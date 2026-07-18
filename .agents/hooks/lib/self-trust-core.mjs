@@ -16,6 +16,7 @@ const DEFAULTS = {
 	completion: { keywords: [], negations: [], evidence_patterns: [], strong_evidence_patterns: [] },
 	change_set_rules: [],
 	artifact_min_meaningful_chars: 100,
+	documentation_impact_gate: { enabled: false, required_targets: [] },
 };
 
 export function loadConfig(root) {
@@ -26,6 +27,7 @@ export function loadConfig(root) {
 		completion: { ...DEFAULTS.completion, ...(c.completion || {}) },
 		changeSetRules: c.change_set_rules || [],
 		minChars: c.artifact_min_meaningful_chars ?? 100,
+		documentationImpact: { ...DEFAULTS.documentation_impact_gate, ...(c.documentation_impact_gate || {}) },
 		F12: new Set(rules?.F12?.allowed_root_dirs || []),
 		F13: new Set(rules?.F13?.allowed_root_files || []),
 		charterFiles: new Set(rules?.charter_immutability?.charter_files || []),
@@ -194,6 +196,97 @@ export function checkSdlc(changedFiles, root, cfg) {
 		return { status: "violation", rule: rule.id, reqs };
 	}
 	return { status: "n/a" };
+}
+
+function immutableExternalEvidence(value) {
+	return /^https:\/\/[^/\s]+\/[^/\s]+\/[^/\s]+\/commit\/[0-9a-f]{40,64}(?:#[-\w]+)?$/i.test(value);
+}
+
+// Documentation impact: production changes must carry one changed, per-issue receipt.
+// The receipt records all configured audiences as UPDATED (with evidence) or N/A (with rationale).
+export function checkDocumentationImpact(changedFiles, root, cfg) {
+	const gate = cfg.documentationImpact || {};
+	if (cfg.level === "off" || !gate.enabled) return { status: "off" };
+
+	const files = changedFiles.map((f) => normalizeRel(f, root));
+	const productionFiles = files.filter(
+		(f) => matchAny(f, gate.when_changed_glob || []) && !matchAny(f, gate.exempt_glob || []),
+	);
+	if (productionFiles.length === 0) return { status: "n/a" };
+
+	const receiptFiles = files.filter((f) => matchAny(f, [gate.receipt_glob]));
+	if (receiptFiles.length === 0) {
+		return { status: "violation", reasons: ["changed documentation-impact receipt is missing"] };
+	}
+
+	const reasons = [];
+	for (const receiptFile of receiptFiles) {
+		let receipt;
+		try {
+			const receiptPath = path.join(root, receiptFile);
+			if (fs.lstatSync(receiptPath).isSymbolicLink()) throw new Error("symlink receipts are not allowed");
+			receipt = JSON.parse(fs.readFileSync(receiptPath, "utf8"));
+		} catch (error) {
+			reasons.push(`${receiptFile}: invalid JSON (${error.message})`);
+			continue;
+		}
+		if (!receipt.issue || !/^#?[1-9]\d*$/.test(String(receipt.issue))) {
+			reasons.push(`${receiptFile}: issue must be a positive issue number`);
+		}
+		const filenameIssue = receiptFile.match(/\/issue-([1-9]\d*)-documentation-impact\.json$/)?.[1];
+		if (!filenameIssue || Number(filenameIssue) !== Number(String(receipt.issue).replace(/^#/, ""))) {
+			reasons.push(`${receiptFile}: filename issue number must match receipt.issue`);
+		}
+		const targets = receipt.targets && typeof receipt.targets === "object" ? receipt.targets : {};
+		const declaredProduction = Array.isArray(receipt.production_files)
+			? receipt.production_files.map((item) => normalizeRel(item, root))
+			: [];
+		const actualSet = new Set(productionFiles);
+		const declaredSet = new Set(declaredProduction);
+		if (
+			actualSet.size !== declaredSet.size
+			|| [...actualSet].some((file) => !declaredSet.has(file))
+		) {
+			reasons.push(`${receiptFile}: production_files must exactly match changed production files`);
+		}
+		const usedEvidence = new Set();
+		for (const target of gate.required_targets || []) {
+			const value = targets[target];
+			if (!value || !["UPDATED", "N/A"].includes(value.status)) {
+				reasons.push(`${receiptFile}: ${target} must be UPDATED or N/A`);
+				continue;
+			}
+			if (value.status === "UPDATED") {
+				const evidence = Array.isArray(value.evidence) ? value.evidence : [];
+				const canonicalEvidence = evidence.map((item) => {
+					if (typeof item !== "string" || !item.trim()) return undefined;
+					if (immutableExternalEvidence(item)) return item.replace(/#[-\w]+$/, "");
+					return normalizeRel(item, root);
+				});
+				const valid = evidence.length > 0 && evidence.every((item) => {
+					if (typeof item !== "string" || !item.trim()) return false;
+					if (immutableExternalEvidence(item)) return true;
+					const rel = normalizeRel(item, root);
+					const allowed = gate.target_evidence_glob?.[target] || [];
+					return files.includes(rel)
+						&& !receiptFiles.includes(rel)
+						&& matchAny(rel, allowed);
+				});
+				if (!valid) reasons.push(`${receiptFile}: every ${target} UPDATED evidence item must be a changed allowed local path or immutable commit URL`);
+				for (const item of canonicalEvidence.filter(Boolean)) {
+					if (usedEvidence.has(item)) reasons.push(`${receiptFile}: evidence cannot be reused across targets (${item})`);
+					usedEvidence.add(item);
+				}
+			} else {
+				const rationale = typeof value.rationale === "string" ? value.rationale.trim() : "";
+				const min = gate.na_rationale_min_chars ?? 30;
+				if (rationale.length < min) reasons.push(`${receiptFile}: ${target} N/A rationale must be at least ${min} characters`);
+			}
+		}
+		const extras = Object.keys(targets).filter((target) => !(gate.required_targets || []).includes(target));
+		if (extras.length) reasons.push(`${receiptFile}: unknown targets: ${extras.join(", ")}`);
+	}
+	return reasons.length ? { status: "violation", reasons } : { status: "ok", receipts: receiptFiles };
 }
 
 // 구조: 변경파일 중 미등록 루트 경로(F12 디렉토리/F13 파일)

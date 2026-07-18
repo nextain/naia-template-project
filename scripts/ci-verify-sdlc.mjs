@@ -4,7 +4,7 @@
  * 사용: node scripts/ci-verify-sdlc.mjs <file1> <file2> ...
  * ESM.
  */
-import { loadConfig, checkSdlc } from "../.agents/hooks/lib/self-trust-core.mjs";
+import { loadConfig, checkDocumentationImpact, checkSdlc } from "../.agents/hooks/lib/self-trust-core.mjs";
 
 const files = process.argv.slice(2);
 const root = process.env.CI_PROJECT_ROOT || process.cwd();
@@ -18,6 +18,12 @@ try {
 	}
 	if (r.status === "bootstrap") console.log(`[CI SDLC검증] bootstrap(rule=${r.rule}) — unverified, 산출물 작성 시 정식 게이트 활성`);
 	else console.log(`[CI SDLC검증 통과] status=${r.status}`);
+	const docs = checkDocumentationImpact(files, root, cfg);
+	if (docs.status === "violation") {
+		console.error(`[CI 문서영향검증 실패] ${(docs.reasons || []).join("; ")}`);
+		process.exit(1);
+	}
+	console.log(`[CI 문서영향검증 통과] status=${docs.status}`);
 	process.exit(0);
 } catch (e) {
 	console.error("[CI SDLC검증 실패] (fail-closed): " + e.message);
