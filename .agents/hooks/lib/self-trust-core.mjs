@@ -202,33 +202,29 @@ function immutableExternalEvidence(value) {
 	return /^https:\/\/[^/\s]+\/[^/\s]+\/[^/\s]+\/commit\/[0-9a-f]{40,64}(?:#[-\w]+)?$/i.test(value);
 }
 
-function normalizeRationale(value) {
+function compactRationale(value) {
 	return value
 		.normalize("NFKC")
 		.toLowerCase()
-		.replace(/[^\p{L}\p{N}/]+/gu, " ")
-		.trim()
-		.replace(/\s+/g, " ");
+		.replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
 function isPlaceholderRationale(rationale, phrases = []) {
-	const normalized = normalizeRationale(rationale);
-	if (!normalized) return false;
-	const tokens = normalized.split(" ");
+	const compact = compactRationale(rationale);
+	if (!compact) return false;
 	const placeholders = phrases
-		.map((phrase) => normalizeRationale(String(phrase)).split(" ").filter(Boolean))
-		.filter((phraseTokens) => phraseTokens.length > 0)
+		.map((phrase) => compactRationale(String(phrase)))
+		.filter(Boolean)
 		.sort((a, b) => b.length - a.length);
-	let removed = false;
-	for (let index = 0; index < tokens.length;) {
-		const match = placeholders.find(
-			(phraseTokens) => phraseTokens.every((token, offset) => tokens[index + offset] === token),
-		);
-		if (!match) return false;
-		removed = true;
-		index += match.length;
+	const reachable = new Array(compact.length + 1).fill(false);
+	reachable[0] = true;
+	for (let index = 0; index < compact.length; index += 1) {
+		if (!reachable[index]) continue;
+		for (const placeholder of placeholders) {
+			if (compact.startsWith(placeholder, index)) reachable[index + placeholder.length] = true;
+		}
 	}
-	return removed;
+	return reachable[compact.length];
 }
 
 // Documentation impact: production changes must carry one changed, per-issue receipt.
