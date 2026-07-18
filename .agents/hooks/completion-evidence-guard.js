@@ -7,7 +7,8 @@
  */
 import fs from "fs";
 import path from "path";
-import { loadConfig, checkCompletion } from "./lib/self-trust-core.mjs";
+import { spawnSync } from "child_process";
+import { loadConfig, checkCompletion, checkDocumentationImpact } from "./lib/self-trust-core.mjs";
 
 function extractCommitMessage(cmd, root) {
 	let msg = "";
@@ -48,6 +49,21 @@ async function main() {
 		process.exit(0); // fail-open
 	}
 	if (cfg.level === "off") process.exit(0);
+
+	const staged = spawnSync("git", ["diff", "--cached", "--name-only", "-z"], {
+		cwd: root,
+		encoding: "utf8",
+	}).stdout.split("\0").filter(Boolean);
+	const docs = checkDocumentationImpact(staged, root, cfg);
+	if (docs.status === "violation") {
+		const reason = `[M4] 문서 영향 증적 미충족 — ${(docs.reasons || []).join("; ")}`;
+		if (cfg.level === "advisory") {
+			process.stdout.write(JSON.stringify({ systemMessage: reason }));
+			process.exit(0);
+		}
+		process.stdout.write(JSON.stringify({ decision: "block", reason }));
+		process.exit(0);
+	}
 
 	// 강한 증거는 인용된 검증 아티팩트가 실제 존재해야 인정 (위조 방지 — 적대검증 교훈).
 	const fileExists = (p) => {

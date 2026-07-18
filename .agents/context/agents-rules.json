@@ -148,9 +148,9 @@
 			{
 				"id": "P05",
 				"name": "requirements_complete",
-				"description": "작업 완료 후 docs/progress/01.requirements/INDEX.md 상태 Done, process-status.json 게이트 done으로 업데이트.",
-				"deliverable": "docs/progress/01.requirements/INDEX.md 상태 Done + process-status.json 전체 게이트 done",
-				"gate": "커밋 전 상태 업데이트 필수"
+				"description": "작업 완료 후 요구사항 상태를 Done으로 갱신하고, 세 문서 독자층의 영향을 판정한 이슈별 receipt를 작성.",
+				"deliverable": "docs/progress/01.requirements/INDEX.md 상태 Done + docs/progress/99.dev-comm/issue-*-documentation-impact.json",
+				"gate": "커밋 전 요구사항 상태와 documentation impact receipt 검증 필수"
 			}
 		]
 	},
@@ -288,6 +288,41 @@
 				]
 			}
 		],
+		"documentation_impact_gate": {
+			"description": "프로덕션 변경은 저장소 문서, 사용자 사용법, 재사용 가능한 학습 자료의 영향을 모두 UPDATED 또는 근거 있는 N/A로 판정한다.",
+			"enabled": true,
+			"when_changed_glob": [
+				"src/main/**"
+			],
+			"exempt_glob": [
+				"**/*.test.*",
+				"**/test/**"
+			],
+			"receipt_glob": "docs/progress/99.dev-comm/issue-*-documentation-impact.json",
+			"required_targets": [
+				"repository_docs",
+				"user_manual",
+				"reusable_learning"
+			],
+			"target_evidence_glob": {
+				"repository_docs": [
+					"README.md",
+					"docs/**"
+				],
+				"user_manual": [
+					"docs/manual/**",
+					".users/**",
+					"READMES/**"
+				],
+				"reusable_learning": [
+					"AGENTS.md",
+					"docs/lessons/**",
+					"docs/book/**",
+					"about-docs/**"
+				]
+			},
+			"na_rationale_min_chars": 30
+		},
 		"artifact_min_meaningful_chars": 100,
 		"terminology": {
 			"_comment": "용어 게이트. 프로젝트 약어는 glossary에 정의하거나 풀어쓴다(불친절한 약자 금지). 일반 상식 약어만 whitelist. forbidden_terms = 금지 신조어/자체용어 블랙리스트(프로젝트가 채움).",
