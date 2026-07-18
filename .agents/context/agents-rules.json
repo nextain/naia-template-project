@@ -321,7 +321,17 @@
 					"about-docs/**"
 				]
 			},
-			"na_rationale_min_chars": 30
+			"na_rationale_min_chars": 30,
+			"na_rationale_placeholder_phrases": [
+				"not relevant",
+				"not applicable",
+				"no impact",
+				"none",
+				"n/a",
+				"관련 없음",
+				"해당 없음",
+				"없음"
+			]
 		},
 		"artifact_min_meaningful_chars": 100,
 		"terminology": {
