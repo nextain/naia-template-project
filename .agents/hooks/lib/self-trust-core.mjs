@@ -202,6 +202,24 @@ function immutableExternalEvidence(value) {
 	return /^https:\/\/[^/\s]+\/[^/\s]+\/[^/\s]+\/commit\/[0-9a-f]{40,64}(?:#[-\w]+)?$/i.test(value);
 }
 
+function normalizeRationale(value) {
+	return value
+		.normalize("NFKC")
+		.toLowerCase()
+		.replace(/[^\p{L}\p{N}/]+/gu, " ")
+		.trim()
+		.replace(/\s+/g, " ");
+}
+
+function isPlaceholderRationale(rationale, phrases = []) {
+	const normalized = normalizeRationale(rationale);
+	return phrases.some((phrase) => {
+		const placeholder = normalizeRationale(String(phrase));
+		if (!placeholder) return false;
+		return normalized.split(placeholder).join(" ").replace(/\s+/g, " ").trim() === "";
+	});
+}
+
 // Documentation impact: production changes must carry one changed, per-issue receipt.
 // The receipt records all configured audiences as UPDATED (with evidence) or N/A (with rationale).
 export function checkDocumentationImpact(changedFiles, root, cfg) {
@@ -281,6 +299,9 @@ export function checkDocumentationImpact(changedFiles, root, cfg) {
 				const rationale = typeof value.rationale === "string" ? value.rationale.trim() : "";
 				const min = gate.na_rationale_min_chars ?? 30;
 				if (rationale.length < min) reasons.push(`${receiptFile}: ${target} N/A rationale must be at least ${min} characters`);
+				if (isPlaceholderRationale(rationale, gate.na_rationale_placeholder_phrases || [])) {
+					reasons.push(`${receiptFile}: ${target} N/A rationale must explain concrete non-applicability, not repeat a placeholder`);
+				}
 			}
 		}
 		const extras = Object.keys(targets).filter((target) => !(gate.required_targets || []).includes(target));
