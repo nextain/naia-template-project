@@ -2,145 +2,49 @@
 
 {{PROJECT_DESCRIPTION}}
 
----
+## Repository Index
 
-## ⚠️ Multi-tool Harness
+- Stable project rules: `.agents/context/agents-rules.json`
+- Context and document routing: `.agents/context/project-index.yaml`
+- Root structure contract: `docs/project-structure.md`
+- Session-contract schema: `.agents/session-contracts/schema.json`
+- Workflow and verification details are linked from the context index.
 
-이 파일은 **canonical SoT** (Single Source of Truth). 아래 4개 파일은 자동 동기화 mirror:
+## Mandatory Reads
 
-- `CLAUDE.md` (Claude Code)
-- `GEMINI.md` (Gemini CLI)
-- `OPENCODE.md` (opencode)
-- `CODEX.md` (Codex)
+Read these before acting:
 
-**편집 규칙**: 이 `AGENTS.md`만 편집. `scripts/sync-harness-mirrors.sh` 또는 pre-commit hook이 4개 mirror 자동 갱신.
+1. `.agents/context/agents-rules.json`
+2. `.agents/context/project-index.yaml`
+3. `docs/project-structure.md`
 
-표준: [agents.md](https://agents.md/) (AAIF — Agentic AI Foundation, Linux Foundation, 2025-12 출범).
+## Context Routing
 
----
+Load durable rules and design documents through
+`.agents/context/project-index.yaml`. Per-work execution evidence and handoff
+state belong in `.agents/progress/`; repository-wide release state may be read
+from `.agents/context/process-status.json`.
 
-## Mandatory Reads (every session start)
+## Session Boundaries
 
-코드를 만지기 전 순서대로 읽는다:
+These shared files are repository indexes, not work contracts. Mutation requires
+one explicit local contract under `.agents/session-contracts/` whose registry
+pointer, digest, `session_bindings`, and progress reference agree. Legacy
+`process-status.current_work` and progress `session_id` fields are read-only
+migration evidence and never authorize mutation.
 
-1. **프로세스 현황**: `.agents/context/process-status.json` — 현재 이슈와 P01~P05 게이트 상태. 세션 시작 시 읽고, `last_updated` 갱신. 세션 종료 시 완료 게이트 업데이트.
-2. **규칙 SoT**: `.agents/context/agents-rules.json` — 모든 금지/필수 규칙.
-3. **구조 명세**: `docs/project-structure.md` — 허용된 루트 디렉토리/파일 목록.
+Background or reference context is not code, UI, or public-document content
+unless an output unit declares its audience and explicit `derive`, `quote`,
+or `require` source authority.
 
----
+## Safety Boundaries
 
-## 구조 규칙 (F12/F13 — permanent)
+Follow `.agents/context/agents-rules.json` for structure, authorization,
+destructive actions, external communication, secrets, SDLC, and verification.
+Concurrent contracts must declare non-overlapping `target_ownership` paths.
 
-**새 디렉토리/파일 생성 전 반드시 확인**:
-- 루트 디렉토리 → `agents-rules.json` F12 `allowed_root_dirs` 확인
-- 루트 파일 → `agents-rules.json` F13 `allowed_root_files` 확인
-- 패키지 → `pnpm-workspace.yaml` 확인
+## Mirrors
 
-미등록 생성 시: `scripts/enforce-root-structure.sh --fix`가 **삭제**.
-
-```bash
-# 구조 검증 (dry-run)
-./scripts/enforce-root-structure.sh
-
-# 미등록 항목 삭제 (--fix)
-./scripts/enforce-root-structure.sh --fix
-```
-
----
-
-## SDLC 프로세스 게이트 (P01~P05 — permanent)
-
-모든 신규 기능/수정 작업은 이 순서를 반드시 따른다:
-
-| 게이트 | 이름 | 산출물(deliverable) | 게이트 조건 |
-|--------|------|---------------------|------------|
-| P01 | 사용자 시나리오 | `docs/progress/02.user-scenarios/INDEX.md` UC 항목 | UC 없으면 다음 단계 금지 |
-| P02 | 테스트 시나리오 | `docs/progress/03.uc-tests/INDEX.md` TEST-S 매핑 | 테스트 매핑 없으면 다음 단계 금지 |
-| P03 | 요구사항 | `docs/progress/01.requirements/INDEX.md` FR/NFR 항목 | 요구사항 없으면 코드 작성 금지 |
-| P04 | 통합 테스트 | 테스트 파일(`src/test`) 또는 검증 결과 | 테스트 없으면 PR 머지 금지 |
-| P05 | 완료 | 요구사항 Done + 이슈별 문서 영향 receipt | 커밋 전 두 증적 검증 필수 |
-
-프로덕션 소스 변경은 `docs/progress/99.dev-comm/issue-*-documentation-impact.json`에 세 독자층을 모두 판정한다.
-
-- `repository_docs`: 공개 동작·계약·구조·검증을 설명하는 저장소 문서
-- `user_manual`: 사용자가 설정하고 조작하며 한계를 이해하는 사용법
-- `reusable_learning`: 다른 프로젝트에도 재사용할 수 있는 근거 기반 교훈
-- 각 값은 `UPDATED`(이번 변경 파일 또는 immutable commit URL 증거)나 `N/A`(구체적 비적용 근거)만 허용한다.
-- `production_files`는 gate를 trigger한 이번 production 변경 파일 전부와 정확히 같아야 한다.
-- 로컬 evidence는 대상별 허용 경로에 있어야 하며, 같은 evidence를 여러 대상에 재사용할 수 없다.
-- receipt가 이번 변경에 포함되지 않거나 대상이 빠지면 로컬 커밋 훅과 CI가 차단한다.
-
-**세션 규칙**:
-- 시작: `process-status.json` 읽기 → `last_updated` 갱신
-- 종료/커밋 전: 완료 게이트 상태 + deliverable 업데이트
-
----
-
-## 헌장 불변 원칙 (Charter Immutability)
-
-확정된 헌장 파일은 **AI가 절대 단독 수정 불가**. 수정 시 사용자 명시 승인 필수.
-
-헌장 파일:
-- `AGENTS.md` + mirrors (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `CODEX.md`)
-- `.agents/context/agents-rules.json`
-- `.agents/context/process-status.json`
-- `docs/project-structure.md`
-
----
-
-## 정규 디자인 문서
-
-| 파일 | 역할 |
-|------|------|
-| `docs/project-structure.md` | 구조 명세 + 리소스 레지스트리 (헌장①) |
-| `docs/progress/01.requirements/INDEX.md` | 기능/비기능 요구사항 (REQ registry) |
-| `docs/progress/02.user-scenarios/INDEX.md` | 사용자 시나리오 (UC registry) |
-| `docs/progress/03.uc-tests/INDEX.md` | 시나리오 테스트 (TEST-S registry) |
-| `docs/progress/04.features/INDEX.md` | 기능 설계 (SPEC registry) |
-| `docs/progress/05.features-tests/INDEX.md` | 기능 테스트 (TEST-F registry) |
-| `docs/glossary.md` | 도메인 용어사전 *(예정)* |
-| `docs/ARCHITECTURE.md` | 시스템 아키텍처 *(예정)* |
-
-> V모델 추적: REQ→UC→TEST-S, UC→SPEC→TEST-F. orphan/dead-link 검사 = `scripts/check-traceability.mjs` (기본 advisory).
-> 추가 시: 위 표에 먼저 등록 → `docs/project-structure.md` Doc Registry 업데이트.
-
----
-
-## 작업 규칙
-
-### 코드 변경 전 체크 4건
-
-1. `AGENTS.md` + `process-status.json` 읽었는가?
-2. P01~P03 게이트 완료됐는가?
-3. 새 파일/폴더가 F12/F13에 등록됐는가?
-4. 헌장 파일 수정이 아닌가? (수정 시 사용자 승인 필수)
-
-### Commit 규칙
-
-- **Conventional Commits**: `type(scope): summary`
-- `process-status.json`이 변경됐으면 커밋에 포함
-- 커밋 메시지에 관련 이슈 번호 + gate ID 명시
-
----
-
-## 빌드 / 테스트
-
-```bash
-pnpm install    # 의존성 설치
-pnpm build      # tsc --build
-pnpm test       # vitest run
-
-# 구조 검증
-./scripts/enforce-root-structure.sh
-
-# harness 동기화
-./scripts/sync-harness-mirrors.sh
-```
-
----
-
-## 컨텍스트 SoT 우선순위
-
-```
-.agents/context/agents-rules.json  >  AGENTS.md (이 파일)  >  기타
-```
+`AGENTS.md` is canonical. `CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, and
+`CODEX.md` are byte-identical mirrors. Validate before synchronization with
+`scripts/sync-harness-mirrors.sh --check`.

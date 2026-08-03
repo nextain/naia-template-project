@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.0",
-  "description": "프로세스 현황 SoT. 세션 시작/종료 시 반드시 업데이트. 구조명세·이슈·리소스를 유기적으로 링크.",
+  "schema_version": "1.1",
+  "description": "저장소 전체 release/SDLC 상태 SoT. 세션별 목표와 변경 권한은 .agents/session-contracts/에만 둔다.",
 
   "refs": {
     "project_structure": "docs/project-structure.md",
@@ -18,6 +18,21 @@
     "status": "idle"
   },
 
+  "legacy_migration": {
+    "mode": "read_only_compatibility",
+    "migrated_to": ".agents/session-contracts/",
+    "note": "current_work는 v1 데이터 유실 방지를 위해 그대로 보존한 읽기 전용 필드다. 새 세션이 읽거나 갱신하거나 결박 권한으로 사용하지 않는다.",
+    "current_work_snapshot": {
+      "issue": null,
+      "title": null,
+      "issue_doc": null,
+      "github_issue": null,
+      "started": null,
+      "last_updated": null,
+      "status": "idle"
+    }
+  },
+
   "sdlc_gates": {
     "P01": { "status": "n/a", "name": "user_scenarios", "deliverable": null, "ref": null },
     "P02": { "status": "n/a", "name": "test_scenarios", "deliverable": null, "ref": null },
@@ -33,23 +48,22 @@
 
   "_usage": {
     "session_start": [
-      "1. 이 파일 읽기",
-      "2. current_work 확인",
-      "3. last_updated를 현재 시각으로 갱신",
-      "4. sdlc_gates 상태 확인 후 작업 시작"
+      "1. .agents/context/agents-rules.json과 project-index.yaml 읽기",
+      "2. 현재 session_id의 명시적 session contract 결박 확인",
+      "3. 필요할 때 저장소 전체 sdlc_gates 상태만 읽기"
     ],
     "session_end": [
       "1. 완료된 게이트 status → done",
       "2. deliverable 경로 기재",
-      "3. last_updated 갱신",
+      "3. 저장소 전체 release 상태가 바뀐 경우에만 last_updated 갱신",
       "4. .users/context/process-status.md 동기화",
       "5. 이 파일을 커밋에 포함"
     ],
     "new_issue": [
-      "1. current_work 필드 업데이트",
-      "2. docs/progress/99.dev-comm/issue-{N}-{slug}.md 신규 생성",
-      "3. sdlc_gates 전체 status → pending으로 리셋",
-      "4. resource_registry.violations 초기화"
+      "1. .agents/session-contracts/에 세션별 계약 생성 및 명시적 결박",
+      "2. .agents/progress/에 계약과 분리된 실행 증거 생성",
+      "3. 저장소 전체 release cycle을 시작할 때만 sdlc_gates를 pending으로 전환",
+      "4. current_work와 legacy_migration.current_work_snapshot은 수정하지 않음"
     ]
   }
 }

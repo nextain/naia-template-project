@@ -10,8 +10,9 @@
 
 | 디렉토리 | 목적 |
 |---------|------|
-| `.agents/` | AI 컨텍스트 SoT — rules, progress, reviews |
+| `.agents/` | AI 컨텍스트 SoT와 로컬 실행 상태 — context, session-contracts, progress, reviews |
 | `.claude/` | Claude Code 설정 |
+| `.codex/` | Codex용 경량 세션 계약 게이트 어댑터 |
 | `.github/` | CI/CD 워크플로우 |
 | `.users/` | Human-readable mirror (.agents/ 내용 반영) |
 | `about-docs/` | **이 표준 repo 자체**에 대한 메타 문서 (설명·검증 ledger·실험). payload 아님 — project-create/migration 이 복제 제외 |
@@ -34,7 +35,7 @@
 
 | 파일 | 목적 |
 |------|------|
-| `AGENTS.md` | AI 도구 진입점 — canonical SoT |
+| `AGENTS.md` | AI 도구용 canonical 저장소 인덱스 |
 | `CLAUDE.md` | AGENTS.md mirror (Claude Code) |
 | `GEMINI.md` | AGENTS.md mirror (Gemini CLI) |
 | `OPENCODE.md` | AGENTS.md mirror (opencode) |
@@ -73,10 +74,10 @@
 
 ## 정규 문서 (Doc Registry)
 
-`docs/` 아래 문서는 `AGENTS.md` 정규 디자인 문서 표에 등록된 것만.
+`docs/` 아래 문서는 이 Doc Registry와 project-index에 등록된 것만.
 
 새 문서 추가 절차:
-1. `AGENTS.md` 정규 디자인 문서 표에 먼저 추가
+1. `.agents/context/project-index.yaml`에 먼저 추가
 2. 이 표에 추가
 3. 사용자 승인 후 실제 파일 생성
 

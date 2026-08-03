@@ -14,6 +14,15 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Bash|shell_command|Edit|Write|NotebookEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/session-contract-gate.js"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|shell_command|Edit|Write|NotebookEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .codex/hooks/session-contract-gate.cjs",
+            "statusMessage": "Checking session contract"
+          }
+        ]
+      }
+    ]
+  }
+}
