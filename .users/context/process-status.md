@@ -1,9 +1,9 @@
-# 프로세스 현황
+# 저장소 프로세스 상태
 
 > **SoT**: `.agents/context/process-status.json`
-> 세션 시작/종료 시 SoT JSON과 이 파일을 동기화.
 
----
+이 문서는 저장소 전체 release/SDLC 상태의 사람용 미러다. 세션별 목표,
+범위, 독자, 경로 소유권과 변경 권한은 `.agents/session-contracts/`에 둔다.
 
 ## 참조 링크
 
@@ -11,45 +11,16 @@
 |------|------|
 | 구조 명세 | [docs/project-structure.md](../../docs/project-structure.md) |
 | 규칙 SoT | [.agents/context/agents-rules.json](../context/agents-rules.json) |
-| 교훈 | [docs/lessons.md](../../docs/lessons.md) |
 | 이슈 문서 | [docs/progress/99.dev-comm/](../../docs/progress/99.dev-comm/) |
+| 세션 계약 스키마 | [schema.json](../session-contracts/schema.json) |
+| 실행 증거 | [progress](../progress/) |
 
----
+## Legacy Migration
 
-## 현재 작업
+`current_work`는 v1 데이터 유실 방지를 위해 원문 필드와 snapshot을
+보존한다. 둘은 읽기 전용이며 세션 시작, 결박, 변경 승인에 사용하지 않는다.
 
-_(신규 이슈 시작 시 업데이트)_
+## Repository Release Gates
 
-**이슈**: —
-**제목**: —
-**상태**: idle
-
----
-
-## SDLC 게이트
-
-| 게이트 | 상태 | 산출물(deliverable) |
-|--------|:----:|---------------------|
-| P01 사용자시나리오 | — | — |
-| P02 테스트시나리오 | — | — |
-| P03 요구사항 | — | — |
-| P04 통합테스트 | — | — |
-| P05 완료 | — | — |
-
-마지막 업데이트: —
-
----
-
-## 세션 체크리스트
-
-**시작 시**:
-- [ ] `process-status.json` 읽기
-- [ ] `current_work` 확인
-- [ ] `last_updated` 갱신
-- [ ] P01~P03 게이트 완료 확인 후 코딩 시작
-
-**종료/커밋 전**:
-- [ ] 완료된 게이트 status → done, deliverable 기재
-- [ ] `last_updated` 갱신
-- [ ] 이 파일 동기화
-- [ ] `process-status.json` 커밋에 포함
+P01~P05와 `resource_registry`는 저장소 전체 release cycle이 실제로 바뀔
+때만 갱신한다. 일반 세션 시작/종료마다 공유 상태를 덮어쓰지 않는다.

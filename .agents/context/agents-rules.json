@@ -3,16 +3,16 @@
 	"version": "2.0.0",
 	"project": "{{PROJECT_NAME}}",
 	"description": "Machine-readable rules for AI tools. SoT for all enforcement gates. Edit this file, then run scripts/sync-harness-mirrors.sh.",
+	"context_boundaries": {
+		"shared_entrypoints_are_indexes": "AGENTS.md is a stable index; all declared tool files are byte-identical mirrors. They never hold a session goal, issue state, implementation plan, completion claim, or artifact wording.",
+		"session_contract_authority": "Mutation requires one explicit local contract under .agents/session-contracts/: registry pointer, active digest, session_bindings, progress contract reference, and non-overlapping target_ownership must agree.",
+		"legacy_read_only": ".agents/context/process-status.json current_work and progress session_id fields are retained for migration evidence only and never grant mutation authority.",
+		"context_is_not_output": "Background/reference/example/internal context is not code, UI, or external-document content without explicit atom-level derive, quote, or require authority for a declared output audience."
+	},
 	"charter_immutability": {
 		"description": "확정된 헌장 파일은 AI가 절대 단독 수정 불가. 수정 시 사용자 명시 승인 + 새 이슈 등록 필수.",
 		"charter_files": [
-			"AGENTS.md",
-			"CLAUDE.md",
-			"GEMINI.md",
-			"OPENCODE.md",
-			"CODEX.md",
 			".agents/context/agents-rules.json",
-			".agents/context/process-status.json",
 			"docs/project-structure.md"
 		],
 		"violation_action": "BLOCK — 사용자 승인 없이 헌장 파일 수정 시 작업 중단",
@@ -37,6 +37,7 @@
 		"allowed_root_dirs": [
 			".agents",
 			".claude",
+			".codex",
 			".github",
 			".users",
 			"READMES",
@@ -100,10 +101,11 @@
 	},
 	"required_process_gate": {
 		"description": "모든 신규 기능/수정 작업은 이 순서를 반드시 따른다. 순서를 건너뛰면 코드 작성 금지.",
-		"process_status_file": ".agents/context/process-status.json",
+		"process_status_file": ".agents/context/process-status.json (repository-wide release state only)",
+		"session_contract_dir": ".agents/session-contracts/ (per-session goal, scope, audience, ownership, and mutation authority)",
 		"update_rule": {
-			"session_start": "process-status.json 읽고 current_work 확인 + last_updated 갱신",
-			"session_end": "완료된 게이트 status → done, deliverable 기재, process-status.md 동기화"
+			"session_start": "현재 session_id의 명시적 session contract 결박 확인; shared current_work는 읽기 전용",
+			"session_end": "세션 progress 증거 갱신; 저장소 전체 release 상태가 바뀐 경우에만 process-status 동기화"
 		},
 		"permission_model_first": {
 			"_source": "harness-books Book1 부록 A.9(#1 권한>능력) + Book2 8.5(최소 권한 모델 = 빌드 1순위, '실패의 순서로 빌드'). 흡수 검토 = alpha-adk .agents/progress/harness-books-integration-findings-2026-06-18.md B절(gap 3).",
@@ -159,13 +161,13 @@
 		"files": [
 			{
 				"order": 1,
-				"path": ".agents/context/process-status.json",
-				"reason": "현재 진행 이슈 + SDLC 게이트 상태 파악. last_updated 갱신."
+				"path": ".agents/context/agents-rules.json",
+				"reason": "규칙 SoT. 금지/필수 규칙 전체."
 			},
 			{
 				"order": 2,
-				"path": ".agents/context/agents-rules.json",
-				"reason": "규칙 SoT. 금지/필수 규칙 전체."
+				"path": ".agents/context/project-index.yaml",
+				"reason": "컨텍스트, 세션 계약, 설계 문서 위치 색인."
 			},
 			{
 				"order": 3,
@@ -201,8 +203,8 @@
 		},
 		{
 			"id": "F05",
-			"rule": "process_status_not_updated",
-			"description": "세션 시작/종료 시 process-status.json 미업데이트 금지.",
+			"rule": "session_contract_missing_or_ambiguous",
+			"description": "읽기 전용 조사 외 변경은 명시적 BOUND 세션 계약 없이 금지. shared process-status/current_work 결박 금지.",
 			"status": "ACTIVE"
 		},
 		{

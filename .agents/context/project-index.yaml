@@ -6,26 +6,40 @@ description: |
 
 # 세션 시작 시 반드시 읽는 파일 (순서 중요)
 mandatory_reads:
-  - file: .agents/context/process-status.json
-    purpose: "현재 이슈 + SDLC 게이트 상태. last_updated 갱신 필수."
   - file: .agents/context/agents-rules.json
     purpose: "규칙 SoT — 금지/필수 전체."
+  - file: .agents/context/project-index.yaml
+    purpose: "컨텍스트·계약·설계 문서 위치 색인."
   - file: docs/project-structure.md
     purpose: "허용된 루트 구조 명세."
 
 # 진입점
 entry_points:
   - file: AGENTS.md
-    purpose: "AI 도구 harness 진입점 (canonical SoT)"
+    purpose: "공유 저장소 인덱스 (canonical entrypoint)"
   - file: CLAUDE.md
-    purpose: "Claude Code mirror of AGENTS.md"
+    purpose: "AGENTS.md의 byte-identical mirror"
+
+session_contracts:
+  schema: .agents/session-contracts/schema.json
+  resolver: .agents/hooks/core/session-contract.cjs
+  mutation_gate: .agents/hooks/session-contract-gate.cjs
+  claude_adapter: .claude/hooks/session-contract-gate.js
+  codex_adapter: .codex/hooks/session-contract-gate.cjs
+  registry: .agents/session-contracts/.session-map.json
+  runtime_contracts: .agents/session-contracts/*.json
+  progress: .agents/progress/*.json
+  rule: "registry + active contract digest + session_bindings + progress contract reference가 일치할 때만 변경 가능"
+  project_isolation: "부모/자식 프로젝트 계약 자동 탐색 금지"
+  legacy: ".agents/context/process-status.json current_work는 무손실 read-only 호환"
+  migration_helper: scripts/migrate-process-status-session-contract.cjs
 
 # 온디맨드 로딩 — 필요한 섹션만 로드
 on_demand_loading:
   process:
-    - file: docs/user-scenarios.md
+    - file: docs/progress/02.user-scenarios/INDEX.md
       topics: [UC, 사용자시나리오, test coverage]
-    - file: docs/requirements.md
+    - file: docs/progress/01.requirements/INDEX.md
       topics: [FR, NFR, 요구사항]
     - file: docs/glossary.md
       topics: [용어, 명칭, terms]
@@ -43,5 +57,5 @@ on_demand_loading:
 # 컨텍스트 SoT 우선순위
 context_priority:
   - .agents/context/agents-rules.json
-  - AGENTS.md
   - .agents/context/project-index.yaml
+  - AGENTS.md
