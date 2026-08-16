@@ -234,9 +234,9 @@ also kept in [AGENTS.en.md](AGENTS.en.md#skills).
    `git submodule add <repo> projects/<name>`
 5. Each member forks the org ADK again as their personal workspace.
 
-### Naia OS integration (optional)
+### Naia Shell integration (optional)
 
-If you use the [Naia OS](https://github.com/nextain/naia-os) desktop app, point
+If you use the [Naia Shell](https://github.com/nextain/naia-shell) desktop app, point
 its workspace path at your ADK directory. Skills and data are served over the API.
 
 ## Contributing
@@ -274,6 +274,6 @@ You may obtain a copy of the License at
 
 ## Links
 
-- **Naia OS** — [github.com/nextain/naia-os](https://github.com/nextain/naia-os)
+- **Naia Shell** — [github.com/nextain/naia-shell](https://github.com/nextain/naia-shell)
 - **Nextain** — [nextain.io](https://nextain.io)
 - **Naia Dashboard** — [naia.nextain.io](https://naia.nextain.io)

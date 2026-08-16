@@ -209,9 +209,9 @@ Nextain의 실제 체인은 `naia-adk → naia-business-adk → nextain-adk → 
    `git submodule add <repo> projects/<name>`
 5. 각 멤버는 조직 ADK를 다시 포크해 개인 워크스페이스로 씁니다.
 
-### Naia OS 연동 (선택)
+### Naia Shell 연동 (선택)
 
-[Naia OS](https://github.com/nextain/naia-os) 데스크톱 앱을 쓴다면 워크스페이스 경로를 본인의
+[Naia Shell](https://github.com/nextain/naia-shell) 데스크톱 앱을 쓴다면 워크스페이스 경로를 본인의
 ADK 디렉터리로 지정하세요. 스킬과 데이터가 API로 제공됩니다.
 
 ## 기여
@@ -246,6 +246,6 @@ You may obtain a copy of the License at
 
 ## 링크
 
-- **Naia OS** — [github.com/nextain/naia-os](https://github.com/nextain/naia-os)
+- **Naia Shell** — [github.com/nextain/naia-shell](https://github.com/nextain/naia-shell)
 - **Nextain** — [nextain.io](https://nextain.io)
 - **Naia Dashboard** — [naia.nextain.io](https://naia.nextain.io)
