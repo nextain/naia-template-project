@@ -1,0 +1,81 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const policy = require("./session-read-policy.cjs");
+const contractCore = require("../../.agents/hooks/core/session-contract.js");
+
+const repositoryRoot = contractCore.findProjectRoot(__dirname);
+
+for (const command of [
+	"git branch new-name",
+	"git branch -f main HEAD~1",
+	"git branch --delete topic",
+	"git checkout -b topic",
+	"git diff --output=changed.patch",
+	"git show HEAD:README.md -o copy.md",
+	"rg --pre 'sh -c touch /tmp/escaped' needle file",
+]) assert.equal(policy.readOnlyShell(command, repositoryRoot), false, command);
+
+for (const command of [
+	"git status --short",
+	"git -C projects/naia-adk status --short",
+	"git -C \"projects/naia adk\" log -1",
+	"git diff --stat",
+	"git log -1",
+	"git show HEAD:README.md",
+	"git rev-parse --show-toplevel",
+	"git branch --show-current",
+	"Get-Content AGENTS.md",
+]) assert.equal(policy.readOnlyShell(command, repositoryRoot), true, command);
+
+assert.equal(
+	policy.readOnlyShell("$paths = @('.agents/context/agents-rules.json','.agents/context/project-index.yaml'); foreach ($p in $paths) { Get-Content -LiteralPath $p -Raw }", repositoryRoot),
+	true,
+	"a literal-path Get-Content batch must remain available to unbound sessions",
+);
+for (const command of [
+	"$paths = @('.agents/context/agents-rules.json'); foreach ($p in $paths) { Set-Content -LiteralPath $p changed }",
+	"$paths = @($(Get-ChildItem)); foreach ($p in $paths) { Get-Content -LiteralPath $p -Raw }",
+	"$paths = @('.agents/context/agents-rules.json'); foreach ($p in $paths) { Invoke-Expression $p }",
+]) assert.equal(policy.readOnlyShell(command, repositoryRoot), false, command);
+
+assert.equal(
+	policy.readOnlyShell("node .agents/skills/session-resume/parse-session.js --list", repositoryRoot),
+	true,
+	"the repository-owned session parser may write only its default temporary digest",
+);
+assert.equal(
+	policy.readOnlyShell("node .agents/skills/session-resume/parse-session.js session-id --out product.txt", repositoryRoot),
+	false,
+	"the trusted parser cannot select a caller-controlled output path",
+);
+assert.equal(
+	policy.readOnlyShell("node arbitrary-parser.js session-id", repositoryRoot),
+	false,
+	"arbitrary Node remains mutating",
+);
+
+const fixture = fs.mkdtempSync(path.join(os.tmpdir(), "session-read-policy-"));
+try {
+	const nested = path.join(fixture, "nested");
+	fs.mkdirSync(nested);
+	assert.equal(policy.requestedWorkdirIssue({}, fixture), null);
+	assert.equal(policy.requestedWorkdirIssue({ workdir: "." }, fixture), null);
+	assert.equal(policy.requestedWorkdirIssue({ workdir: nested }, fixture), "mismatch");
+	assert.equal(policy.requestedWorkdirIssue({ workdir: "missing" }, fixture), "invalid");
+	assert.equal(policy.explicitlyScopedRead(`git -C "${nested}" status --short`, fixture), true);
+	assert.equal(policy.explicitlyScopedRead("git status --short", fixture), false);
+	assert.equal(policy.explicitlyScopedRead("Get-Content -Raw -LiteralPath 'D:\\alpha-adk\\AGENTS.md'", fixture), true);
+	assert.equal(policy.explicitlyScopedRead("Get-ChildItem -LiteralPath 'D:\\alpha-adk\\.agents' -Force | Select-Object Name,Length", fixture), true);
+	assert.equal(policy.explicitlyScopedRead("Get-Item -Path '\\\\server\\share\\item.txt'", fixture), true);
+	assert.equal(policy.explicitlyScopedRead("Get-Content -LiteralPath AGENTS.md", fixture), false);
+	assert.equal(policy.explicitlyScopedRead("gc -LiteralPath 'D:\\alpha-adk\\AGENTS.md'", fixture), false);
+	assert.equal(policy.explicitlyScopedRead("Get-Content -LiteralPath 'D:\\alpha-adk\\AGENTS.md'; Get-Content local.txt", fixture), false);
+	assert.equal(policy.explicitlyScopedRead("Get-Content -LiteralPath 'D:\\alpha-adk\\AGENTS.md' & Set-Content local.txt changed", fixture), false);
+	assert.equal(policy.explicitlyScopedRead("Get-Content -LiteralPath 'D:\\alpha-adk\\AGENTS.md'\nSet-Content local.txt changed", fixture), false);
+} finally {
+	fs.rmSync(fixture, { recursive: true, force: true });
+}
+
+console.log("session read policy: PASS");

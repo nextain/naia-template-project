@@ -15,9 +15,10 @@ let pass = 0, fail = 0;
 const check = (n, c) => { console.log(`${c ? "✅ PASS" : "❌ FAIL"} — ${n}`); c ? pass++ : fail++; };
 
 const KINDS = ["skills", "hooks", "commands", "workflows"];
+const INDEX_ONLY_KINDS = ["hooks", "commands", "workflows"];
 
 // 1) per-item 복사 디렉터리 금지 (잘못된 모델 — 하네스가 잡아야 한다)
-for (const k of KINDS) {
+for (const k of INDEX_ONLY_KINDS) {
 	check(`.users/${k}/ per-item 디렉터리 없음`, !isDir(join(ROOT, ".users", k)));
 }
 

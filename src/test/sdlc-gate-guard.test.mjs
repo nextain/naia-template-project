@@ -7,7 +7,7 @@ import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const HOOK = resolve(__dirname, "../../.agents/hooks/sdlc-gate-guard.js");
+const HOOK = resolve(__dirname, "../../.agents/hooks/sdlc-gate-guard.mjs");
 const LONG = "내용 ".repeat(40); // 100자+
 
 function setupRoot(files = {}, level = "enforced") {

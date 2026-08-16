@@ -6,4 +6,4 @@
 
 | 이름 | 파일 | 설명 |
 |------|------|------|
-| _(등록된 commands 없음)_ | — | — |
+| COMMAND_TEMPLATE | `.agents/commands/COMMAND_TEMPLATE.md` | Brief description of what this command does |

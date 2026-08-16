@@ -1,0 +1,245 @@
+---
+name: verify-implementation
+description: 등록된 모든 verify-* 스킬을 순차 실행해 통합 검증 보고서를 생성합니다. 기능 구현 후, PR 전, 코드 리뷰 시, issue-driven-development Review/Post-test Review 단계마다 반드시 사용. /verify-implementation으로 호출.
+disable-model-invocation: true
+argument-hint: "[선택사항: 특정 verify 스킬 이름]"
+---
+
+# 구현 검증
+
+## 목적
+
+프로젝트에 등록된 모든 `verify-*` 스킬을 순차적으로 실행하여 통합 검증을 수행합니다:
+
+- 각 스킬의 Workflow에 정의된 검사를 실행
+- 각 스킬의 Exceptions를 참조하여 false positive 방지
+- 발견된 이슈에 대해 수정 방법을 제시
+- 명백한 범위 내 결함은 자동 수정 및 재검증; 설계·사업·범위 선택만 사용자 결정 요청
+
+## 실행 시점
+
+- **Review 및 Post-test Review 단계마다** — `issue-driven-development.yaml` 워크플로우에 의해 자동 호출됨 (조건 없이 항상 실행)
+- 새로운 기능을 구현한 후
+- Pull Request를 생성하기 전
+- 코드 리뷰 중
+- 코드베이스 규칙 준수 여부를 감사할 때
+
+## 실행 대상 스킬
+
+이 스킬이 순차 실행하는 검증 스킬 목록입니다. `/manage-skills`가 스킬을 생성/삭제할 때 이 목록을 자동 업데이트합니다.
+
+| # | 스킬 | 설명 |
+|---|------|------|
+| 1 | `verify-contract-conformance` | 계약↔코드 드리프트(시그니처/계약만/코드만) 결정론 검출 |
+| 2 | `verify-request-contract` | 원요청 source→증거·권한·2회 Clean·Claude Code/Codex 동등성 결정론 검증 |
+| 3 | `verify-benchmark-contract` | 벤치 스키마·공급자 영수증·HMAC/DPAPI 저널·분석 증거 검증 |
+| 4 | `verify-product-preservation` | 프로젝트 adapter가 선언한 제품 표면·capability·source provenance와 delivery gate 검증 |
+
+<!-- 스킬이 추가되면 위 형식으로 등록 -->
+
+## 워크플로우
+
+### Step 1: 소개
+
+위의 **실행 대상 스킬** 섹션에 나열된 스킬을 확인합니다.
+
+먼저 두 집합을 구분해 대조합니다.
+
+- **catalog 집합**: 실제 `.agents/skills/verify-*/SKILL.md` = `.agents/context/skills-index.yaml`
+  = `.users/skills-list.md` = `.claude/skills/verify-*` pointer
+- **실행 집합**: catalog에서 orchestrator인 `verify-implementation` 자신을 제외한 집합
+  = 이 목록 = `/manage-skills`의 **등록된 검증 스킬**
+
+각 집합의 누락·추가·중복은 registry drift이며 기능 작업에서는 즉시 FAIL입니다. 표의 표시
+순서는 실행 순서로만 사용하며 catalog 정렬 순서 차이 자체를 drift로 판정하지 않습니다.
+
+선택적 인수가 제공된 경우, 해당 스킬만 필터링합니다.
+
+**등록된 스킬이 0개인 경우:**
+
+```markdown
+## 구현 검증
+
+검증 스킬이 없습니다. `/manage-skills`를 실행하여 프로젝트에 맞는 검증 스킬을 생성하세요.
+```
+
+경량 문서 작업이면 안내 후 종료할 수 있습니다. 기능 작업, planning/integration review,
+release 준비 중이라면 검증 공백이므로 FAIL하고 `/manage-skills`로 등록을 복구합니다.
+
+**등록된 스킬이 1개 이상인 경우:**
+
+실행 대상 스킬 테이블의 내용을 표시합니다:
+
+```markdown
+## 구현 검증
+
+다음 검증 스킬을 순차 실행합니다:
+
+| # | 스킬 | 설명 |
+|---|------|------|
+| 1 | verify-<name1> | <description1> |
+| 2 | verify-<name2> | <description2> |
+
+검증 시작...
+```
+
+### Step 2: 순차 실행
+
+**실행 대상 스킬** 테이블에 나열된 각 스킬에 대해 다음을 수행합니다:
+
+#### 2a. 스킬 SKILL.md 읽기
+
+해당 스킬의 `.agents/skills/verify-<name>/SKILL.md`를 읽고 다음 섹션을 파싱합니다:
+
+- **Workflow** — 실행할 검사 단계와 탐지 명령어
+- **Exceptions** — 위반이 아닌 것으로 간주되는 패턴
+- **Related Files** — 검사 대상 파일 목록
+
+#### 2b. 검사 실행
+
+Workflow 섹션에 정의된 각 검사를 순서대로 실행합니다:
+
+1. 검사에 명시된 도구(Grep, Glob, Read, Bash)를 사용하여 패턴 탐지
+2. 탐지된 결과를 해당 스킬의 PASS/FAIL 기준에 대조
+3. Exceptions 섹션에 해당하는 패턴은 면제 처리
+4. Discord session orchestration paths are covered by `verify-product-preservation`; run `pnpm test:discord-sessions` when that skill selects them.
+5. FAIL인 경우 이슈를 기록:
+   - 파일 경로 및 라인 번호
+   - 문제 설명
+   - 수정 권장 사항 (코드 예시 포함)
+
+#### 2c. 스킬별 결과 기록
+
+각 스킬 실행 완료 후 진행 상황을 표시합니다:
+
+```markdown
+### verify-<name> 검증 완료
+
+- 검사 항목: N개
+- 통과: X개
+- 이슈: Y개
+- 면제: Z개
+
+[다음 스킬로 이동...]
+```
+
+### Step 3: 통합 보고서
+
+모든 스킬 실행 완료 후, 결과를 하나의 보고서로 통합합니다:
+
+```markdown
+## 구현 검증 보고서
+
+### 요약
+
+| 검증 스킬 | 상태 | 이슈 수 | 상세 |
+|-----------|------|---------|------|
+| verify-<name1> | PASS / X개 이슈 | N | 상세... |
+| verify-<name2> | PASS / X개 이슈 | N | 상세... |
+
+**발견된 총 이슈: X개**
+**Review: CLEAN | NOT_CLEAN**
+**Delivery: RELEASE_ELIGIBLE | REVIEW_ONLY**
+```
+
+**모든 검증 통과 시:**
+
+```markdown
+모든 검증을 통과했습니다!
+
+등록된 검증 범위가 통과했습니다:
+
+- verify-<name1>: <통과 내용 요약>
+- verify-<name2>: <통과 내용 요약>
+
+`verify-product-preservation`과 최신 integration review가 모두 CLEAN일 때만
+`RELEASE_ELIGIBLE`입니다. 그렇지 않으면 검증 통과 항목이 있어도 `REVIEW_ONLY`입니다.
+```
+
+**이슈 발견 시:**
+
+각 이슈를 파일 경로, 문제 설명, 수정 권장 사항과 함께 나열합니다:
+
+```markdown
+### 발견된 이슈
+
+| # | 스킬 | 파일 | 문제 | 수정 방법 |
+|---|------|------|------|-----------|
+| 1 | verify-<name1> | `path/to/file.ts:42` | 문제 설명 | 수정 코드 예시 |
+| 2 | verify-<name2> | `path/to/file.tsx:15` | 문제 설명 | 수정 코드 예시 |
+```
+
+### Step 4: 수정 권한 분류
+
+명백한 범위 내 구현·테스트·문서 정합성 결함은 반복 승인 없이 자동 수정 대상으로
+분류합니다. `AskUserQuestion`은 수정이 새 설계·사업·제품·범위 선택을 요구하거나,
+비가역·외부영향 예외에 해당할 때만 사용합니다.
+
+### Step 5: 수정 적용
+
+범위 내 결함은 모두 순서대로 수정합니다:
+
+모든 수정을 순서대로 적용하며 진행 상황을 표시합니다:
+
+```markdown
+## 수정 적용 중...
+
+- [1/X] verify-<name1>: `path/to/file.ts` 수정 완료
+- [2/X] verify-<name2>: `path/to/file.tsx` 수정 완료
+
+X개 수정 완료.
+```
+
+설계·사업·제품·범위 선택이 필요한 항목만 근거와 선택지를 제시하고 사용자 결정을 기다립니다.
+
+### Step 6: 수정 후 재검증
+
+수정이 적용된 경우, 이슈가 있었던 스킬만 다시 실행하여 Before/After를 비교합니다:
+
+```markdown
+## 수정 후 재검증
+
+이슈가 있었던 스킬을 다시 실행합니다...
+
+| 검증 스킬 | 수정 전 | 수정 후 |
+|-----------|---------|---------|
+| verify-<name1> | X개 이슈 | PASS |
+| verify-<name2> | Y개 이슈 | PASS |
+
+모든 검증을 통과했습니다!
+```
+
+수정 뒤에는 source, baseline, preservation contract, work revision 결박이 움직였는지
+확인합니다. 움직였다면 이전 Clean receipt를 재사용하지 말고 planning/integration review의
+Clean 연속 기록을 다시 시작합니다.
+
+**여전히 이슈가 남은 경우:**
+
+```markdown
+### 잔여 이슈
+
+| # | 스킬 | 파일 | 문제 |
+|---|------|------|------|
+| 1 | verify-<name> | `path/to/file.ts:42` | 자동 수정 불가 — 수동 확인 필요 |
+
+수동으로 해결한 후 `/verify-implementation`을 다시 실행하세요.
+```
+
+---
+
+## 예외사항
+
+다음은 **문제가 아닙니다**:
+
+1. **등록된 스킬이 없는 비기능 경량 작업** — 안내 메시지를 표시하고 종료할 수 있음. 기능·release 작업은 FAIL
+2. **스킬의 자체적 예외** — 각 verify 스킬의 Exceptions 섹션에 정의된 패턴은 이슈로 보고하지 않음
+3. **verify-implementation 자체** — 실행 대상 스킬 목록에 자기 자신을 포함하지 않음
+4. **manage-skills** — `verify-`로 시작하지 않으므로 실행 대상에 포함되지 않음
+
+## Related Files
+
+| File | Purpose |
+|------|---------|
+| `.agents/skills/manage-skills/SKILL.md` | 스킬 유지보수 (이 파일의 실행 대상 스킬 목록을 관리) |
+| `.agents/skills/verify-product-preservation/SKILL.md` | 기존 제품 표면과 delivery state 검증 |
+| `CLAUDE.md` | 프로젝트 지침 |

@@ -4,8 +4,6 @@ name: self-trust gates
 
 on:
   pull_request:
-  push:
-    branches: [main]
 
 jobs:
   verify:

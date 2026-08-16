@@ -1,61 +1,348 @@
-project: "{{PROJECT_NAME}}"
-version: "0.1.0"
-updated: "{{DATE}}"
-description: |
-  {{PROJECT_DESCRIPTION}}
+# Copyright 2026 Nextain Inc. All rights reserved.
+#
+# Naia ADK 워크스페이스 인덱스
+# AI가 서브모듈별 규칙과 진입점을 찾는 데 사용
+version: "2.0"
 
-# 세션 시작 시 반드시 읽는 파일 (순서 중요)
-mandatory_reads:
-  - file: .agents/context/agents-rules.json
-    purpose: "규칙 SoT — 금지/필수 전체."
-  - file: .agents/context/project-index.yaml
-    purpose: "컨텍스트·계약·설계 문서 위치 색인."
-  - file: docs/project-structure.md
-    purpose: "허용된 루트 구조 명세."
+workspace:
+  type: workspace_adk
+  name: naia-adk
+  owner: nextain
+  org: nextain
+  repo: nextain/naia-template-project
+  visibility: public
 
-# 진입점
-entry_points:
-  - file: AGENTS.md
-    purpose: "공유 저장소 인덱스 (canonical entrypoint)"
-  - file: CLAUDE.md
-    purpose: "AGENTS.md의 byte-identical mirror"
+# 서브모듈 정의
+submodules:
+  # === projects/ 표준 프로젝트 ===
+  # === 문서 ===
+  docs-work-logs:
+    path: ./docs-work-logs
+    type: docs
+    description: "Developer work logs (per-person folders)"
+    repo: nextain/docs-work-logs
+    visibility: private
+    rulesEntrypoint: AGENTS.md
+    myFolder: luke/
+    status: active
 
-session_contracts:
-  schema: .agents/session-contracts/schema.json
-  resolver: .agents/hooks/core/session-contract.cjs
-  mutation_gate: .agents/hooks/session-contract-gate.cjs
-  claude_adapter: .claude/hooks/session-contract-gate.js
-  codex_adapter: .codex/hooks/session-contract-gate.cjs
-  registry: .agents/session-contracts/.session-map.json
-  runtime_contracts: .agents/session-contracts/*.json
-  progress: .agents/progress/*.json
-  rule: "registry + active contract digest + session_bindings + progress contract reference가 일치할 때만 변경 가능"
-  project_isolation: "부모/자식 프로젝트 계약 자동 탐색 금지"
-  legacy: ".agents/context/process-status.json current_work는 무손실 read-only 호환"
-  migration_helper: scripts/migrate-process-status-session-contract.cjs
+  docs-nextain:
+    path: ./docs-nextain
+    type: docs
+    description: "Nextain internal docs (onboarding, meetings, design, reports)"
+    repo: nextain/docs-nextain
+    visibility: private
+    rulesEntrypoint: AGENTS.md
+    status: active
 
-# 온디맨드 로딩 — 필요한 섹션만 로드
+  docs-business:
+    path: ./docs-business
+    type: docs
+    description: "Business docs for board (proposals, strategy, IR)"
+    repo: nextain/docs-business
+    visibility: private
+    rulesEntrypoint: README.md
+    status: active
+
+  # === 프로젝트 ===
+  example.com:
+    path: ./example.com
+    type: project
+    description: "Cafelua personal website"
+    repo: luke-n-alpha/example-project-private
+    visibility: private
+    rulesEntrypoint: README.md
+    status: active
+
+  project-any-llm:
+    path: ./project-any-llm
+    type: lib
+    description: "Any-LLM SDK + FastAPI gateway (LLM proxy, credits, auth, usage tracking)"
+    repo: nextain/any-llm
+    visibility: public
+    rulesEntrypoint: README.md
+    status: active
+
+  # === 참조용 (Upstream Tracking, Read-Only) ===
+  ref-cline:
+    path: ./ref-cline
+    type: reference
+    description: "Cline upstream reference (VS Code AI extension)"
+    source: https://github.com/cline/cline
+    visibility: public  # external
+    status: active
+
+  ref-opencode:
+    path: ./ref-opencode
+    type: reference
+    description: "OpenCode reference (TUI-based AI coding agent)"
+    source: https://github.com/anomalyco/opencode
+    visibility: public  # external
+    status: active
+
+  ref-nanoclaw:
+    path: ./ref-nanoclaw
+    type: reference
+    description: "NanoClaw reference (lightweight AI agent framework)"
+    source: https://github.com/qwibitai/nanoclaw
+    visibility: public  # external
+    status: active
+
+  ref-moltbot:
+    path: ./ref-moltbot
+    type: reference
+    description: "Moltbot reference"
+    source: https://github.com/moltbot/moltbot
+    visibility: public  # external
+    status: active
+
+  ref-project-airi:
+    path: ./ref-project-airi
+    type: reference
+    description: "AIRI reference (AI character project)"
+    source: https://github.com/moeru-ai/airi
+    visibility: public  # external
+    status: active
+
+  ref-jikime-adk:
+    path: ./ref-jikime-adk
+    type: reference
+    description: "Jikime ADK reference (Agent Development Kit)"
+    source: https://github.com/jikime/jikime-adk
+    visibility: public  # external
+    status: active
+
+  ref-jikime-mem:
+    path: ./ref-jikime-mem
+    type: reference
+    description: "Jikime Memory reference"
+    source: https://github.com/jikime/jikime-mem
+    visibility: public  # external
+    status: active
+
+  ref-cc:
+    path: ./ref-cc
+    type: reference
+    description: "Claude Code CLI reference (AI coding agent, TypeScript, 1884 files)"
+    source: "Extracted from Claude Code CLI (Anthropic)"
+    visibility: private  # internal analysis
+    rulesEntrypoint: AGENTS.md
+    status: active
+    notes: "Dual-mirror context (.agents/ + .users/). Naia OS adoption analysis in .agents/context/naia-os-adoption.yaml"
+
+# 로컬 프로젝트 (서브모듈 아님)
+local_projects:
+  naia-os:
+    path: ./naia-os
+    type: project
+    description: "Naia OS desktop app (Tauri 2 + React + Three.js + Node.js agent)"
+    repo: nextain/naia-os
+    visibility: public
+    rulesEntrypoint: AGENTS.md
+    status: active
+
+  about.nextain.io:
+    path: ./about.nextain.io
+    type: project
+    description: "Nextain corporate website (Next.js 14 + next-intl)"
+    repo: nextain/about.nextain.io
+    visibility: public
+    rulesEntrypoint: README.md
+    status: active
+
+  naia.nextain.io:
+    path: ./naia.nextain.io
+    type: project
+    description: "Naia web app / Lab portal (Next.js + BFF for gateway)"
+    repo: nextain/naia.nextain.io
+    visibility: private
+    rulesEntrypoint: AGENTS.md
+    status: active
+
+  aiedu.nextain.io:
+    path: ./aiedu.nextain.io
+    type: project
+    description: "AI education platform — curriculum-driven AI teacher (Next.js + Monaco + Pyodide + any-llm)"
+    repo: nextain/aiedu.nextain.io
+    visibility: private
+    rulesEntrypoint: AGENTS.md
+    status: active
+    notes: "B2B commercial product. Dual-mirror context. Curriculum as plugin. Depends on any-llm B2B extension."
+
+  admin.nextain.io:
+    path: ./admin.nextain.io
+    type: project
+    description: "Nextain B2B admin control plane (license key mgmt, token tracking, client mgmt)"
+    repo: nextain/admin.nextain.io
+    visibility: private
+    rulesEntrypoint: AGENTS.md
+    status: active
+    notes: "Internal tool. Manages aiedu.nextain.io and future B2B products."
+
+  9router:
+    path: ./9router
+    type: project
+    description: "9Router — Free AI Router dashboard (Next.js). Auto-routes Claude Code, Cursor, Cline, etc. to 40+ AI providers & 100+ models."
+    repo: decolua/9router
+    visibility: public
+    rulesEntrypoint: README.md
+    status: active
+    notes: "Standalone git repo (not a submodule). External open-source project maintained by luke."
+
+  issue-desk:
+    path: ./issue-desk
+    type: project
+    description: "IssueDesk — standalone Vite+React panel for naia-os. GitHub issue/PR triage, community assistant, notification triage."
+    repo: nextain/issue-desk
+    visibility: private
+    rulesEntrypoint: README.md
+    status: active
+    notes: "Standalone git repo (not a submodule). Served as panel.json + index.html from naia-os shell. Design doc: naia-os/docs/design/issue-desk.ko.md"
+
+# GitHub-only repos (not in workspace)
+github_only_repos:
+  titanoboa:
+    type: tool
+    description: "Naia OS Live ISO builder (fork of ublue-os/titanoboa)"
+    repo: nextain/titanoboa
+    visibility: public
+    usedBy: naia-os  # .github/workflows/iso.yml
+    status: active
+
+  member-template:
+    type: template
+    description: "Member workspace template for onboarding"
+    repo: nextain/member-template
+    visibility: private
+    status: active
+
+  project-any-llm:
+    type: duplicate
+    description: "DUPLICATE of nextain/any-llm — TO BE DELETED"
+    repo: nextain/project-any-llm
+    visibility: public
+    status: deprecated
+
+# work-logs 폴더 매핑
+workLogsFolders:
+  naia-os: naia-os/work-logs/
+  example.com: example.com/work-logs/
+
+# 네이밍 컨벤션
+namingConventions:
+  projects: "project-*"
+  libs: "lib-*"
+  docs: "docs-*"
+  references: "ref-*"
+
+# 컨텍스트 파일 인덱스
+contextFiles:
+  session_contracts:
+    path: .agents/session-contracts/
+    description: "Local per-session mutation contracts; schema.json is shared, runtime contracts and registry are ignored"
+    progress_boundary: ".agents/progress/ records execution evidence and never grants mutation authority"
+  philosophy:
+    path: .agents/context/philosophy.yaml
+    description: "Core project philosophy (the 'why')"
+    mirrors:
+      korean: .users/context/philosophy.md
+      english: .users/context/en/philosophy.md
+  contributing:
+    path: .agents/context/contributing.yaml
+    description: "AI contribution guide"
+    mirrors:
+      korean: .users/context/contributing.md
+      english: .users/context/en/contributing.md
+  terminology:
+    path: .agents/context/terminology.yaml
+    description: "Terminology & communication policy — no neologisms, plain Korean default, parenthesize academic/acronym"
+    mirrors:
+      korean: .users/context/terminology.md
+      english: .users/context/en/terminology.md
+  request_contract:
+    path: .agents/context/request-contract.json
+    description: "Opt-in original-request integrity policy shared by Claude Code and Codex adapters"
+    mirrors:
+      korean: .users/context/request-contract.md
+  development_model_routing:
+    path: .agents/context/development-model-routing.yaml
+    description: "Portable L3/L2/L1 role, balanced Codex binding, review independence, and bounded-context SoT"
+  discord_gateway_operations:
+    path: .agents/context/discord-gateway-operations.yaml
+    description: "Provider-neutral Discord gateway capability and private deployment-overlay boundary"
+
+# opt-in localmodel backends (2026-05-15)
+# naia-adk 의 localmodel 설정에서 선택 가능한 외부 음성/모달 backend.
+# naia-agent 가 호출. 항상 X — 한국어 음성/노래 vertical 필요 시 opt-in.
+# RAG / context 관리 / 장기기억 / 도메인 지식 = naia-agent / naia-memory (backend X).
+optInLocalmodels:
+  - name: naia-omni-cascade
+    repo: nextain/naia-omni-cascade
+    visibility: private (nextain org)
+    provides: 한국어 full-duplex 음성 대화 backend (로컬 TTS int8 + 립싱크 아바타 캐스케이드) + 품질 벤치마크
+    selectedVia: localmodel 설정 (opt-in)
+    boundary: 모델 serving + system prompt + 벤치마크만. RAG/context/기억은 naia-agent.
+  - name: naia-sing
+    repo: nextain/naia-sing
+    visibility: private (nextain org)
+    provides: 노래(SVS) backend — ref voice + 곡 → 사용자 음색 가창
+    selectedVia: localmodel 설정 (opt-in)
+
+# ctx on-demand loading (ctx-section-format v1)
+# 필요한 섹션만 정밀 로드 가능. AI는 전체 파일 대신 관련 섹션 ID만 읽을 것.
+# 인덱스: .agents/context/.ctx-index.json (gitignored, 훅으로 자동 재빌드)
 on_demand_loading:
-  process:
-    - file: docs/progress/02.user-scenarios/INDEX.md
-      topics: [UC, 사용자시나리오, test coverage]
-    - file: docs/progress/01.requirements/INDEX.md
-      topics: [FR, NFR, 요구사항]
-    - file: docs/glossary.md
-      topics: [용어, 명칭, terms]
-  architecture:
-    - file: docs/ARCHITECTURE.md
-      topics: [아키텍처, 패키지맵, 의존성]
-  active_issues:
-    - file: .agents/progress/
-      topics: [이슈, 진행중, SDLC]
-  quarantine:
-    - file: quarantine/MANIFEST.json
-      topics: [보류격리, 백업자산, 방치자산, quarantine]
-      note: "harden 이 보류 격리한 방치 의심 자산 목록(force-추적). 비어있지 않으면 백업 자산이 존재 — pending_notice 항목은 권한 유저 처분 대기. scripts/quarantine.mjs"
+  index: .agents/context/.ctx-index.json
+  sections:
+    - id: naia-adk:development_model_routing
+      file: .agents/context/development-model-routing.yaml
+      description: "L3 Secretary, L2 Issue Leader, L1 Worker roles and balanced Codex model routing"
+      tags: [codex, balanced, roles, delegation, context-budget]
+    - id: naia-adk:discord_gateway_operations
+      file: .agents/context/discord-gateway-operations.yaml
+      description: "Common Discord gateway behavior, context isolation, profile rollback, and deployment overlay contract"
+      tags: [discord, gateway, codex, profiles, operations]
+    - id: naia-adk:lessons_workflow
+      file: .agents/context/lessons-workflow.yaml
+      description: "Workflow & process lessons (IDD violations, review, harness-design, destructive-action)"
+      tags: [workflow, idd, review, harness, iteration]
+    - id: naia-adk:lessons_upstream
+      file: .agents/context/lessons-upstream.yaml
+      description: "Upstream integration & contribution lessons (fork, rebase, pattern-compliance)"
+      tags: [upstream, integration, contribution, fork]
+    - id: naia-adk:lessons_platform
+      file: .agents/context/lessons-platform.yaml
+      description: "Platform, environment & CI lessons (Plymouth, vLLM, Bazzite, naia-os)"
+      tags: [platform, ci, environment, testing, vllm]
+    - id: naia-adk:lessons_frontend
+      file: .agents/context/lessons-frontend.yaml
+      description: "Frontend lessons (React, IndexedDB, GitHub API, regex) — all issue-desk"
+      tags: [react, indexeddb, github-api, regex, issue-desk]
+    - id: naia-adk:lessons_documents
+      file: .agents/context/lessons-documents.yaml
+      description: "Document extraction lessons — HWP/DOCX/PPTX (read-doc skill)"
+      tags: [document-extraction, hwp, docx, pptx]
+    - id: naia-adk:gstack_comparison
+      file: .agents/context/gstack-comparison.md
+      description: "gstack vs naia-adk comparison — completeness, scope, review, verification (sections 1-8)"
+      tags: [gstack, code-review, scope, completeness]
+    - id: naia-adk:gstack_hooks
+      file: .agents/context/gstack-hooks.md
+      description: "gstack hook system analysis + all findings (A-E, F1-F10)"
+      tags: [gstack, hooks, harness, findings]
+    - id: naia-adk:gstack_priority
+      file: .agents/context/gstack-priority.md
+      description: "gstack improvement priority list (P0-P3)"
+      tags: [gstack, priority]
+    - id: naia-adk:lessons_craft
+      file: .agents/context/lessons-craft.yaml
+      description: "AI craft discipline — 4 coding principles, 6 core behaviors, 8 anti-patterns, anti-overengineering, prompting best-practices (transplanted from moai-adk; public/Apache/MIT sources)"
+      tags: [craft, discipline, anti-pattern, simplicity, scope, verify, behavior]
 
-# 컨텍스트 SoT 우선순위
-context_priority:
+# 진입점 우선순위
+entrypointPriority:
+  - AGENTS.md    # canonical index; CLAUDE.md and GEMINI.md are byte-identical mirrors
   - .agents/context/agents-rules.json
+  - .agents/context/ai-work-index.yaml
   - .agents/context/project-index.yaml
-  - AGENTS.md
+  - README.md

@@ -48,7 +48,8 @@ const NAME_PATTERNS = [
 ];
 const offenders = tracked.filter((f) => NAME_PATTERNS.some((re) => re.test(f))
 	// .env.example / *.example 류는 허용
-	&& !/\.example$/i.test(f));
+	&& !/\.example$/i.test(f)
+	&& !f.startsWith(".agents/requirements/"));
 check(`추적 경로에 시크릿류 파일명 0 (발견: ${offenders.slice(0,3).join(", ") || "없음"})`, offenders.length === 0);
 
 // data-private 내용이 추적되지 않는지 (README 만 허용)

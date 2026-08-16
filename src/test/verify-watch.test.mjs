@@ -24,6 +24,11 @@ const run = (args) => {
 	} catch (e) { return { code: e.status ?? 1, out: (e.stdout || "") + (e.stderr || "") }; }
 };
 
+if (process.platform === "win32") {
+	console.log("verify-watch runtime: SKIP (Linux bash path semantics are covered in CI)");
+	process.exit(0);
+}
+
 // ── 1) 안전 계약 (source) — enforce 를 --fix 로 부르지 않는다 (rm -rf 백그라운드 노출 차단) ──
 check("enforce 호출에 --fix 없음 (자동 rm -rf 차단)", !/enforce-root-structure\.sh[^\n]*--fix/.test(SRC));
 check("자동수정 없음 — mirror 실제번역(쓰기)·--fix 미사용, --check 만", /--check/.test(SRC) && !/mirror-translate\.mjs"?\s+"\$[a-z]+"\s*$/m.test(SRC));

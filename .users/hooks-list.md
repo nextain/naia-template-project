@@ -6,9 +6,15 @@
 
 | 이름 | 파일 | 설명 |
 |------|------|------|
-| charter-guard | `.agents/hooks/charter-guard.js` | Charter Guard (PreToolUse on Edit\|Write) — 헌장·hook·설정 파일의 AI 단독 수정 차단. |
-| completion-evidence-guard | `.agents/hooks/completion-evidence-guard.js` | M4 — Completion Evidence Guard (PreToolUse on Bash). 판정은 공통 코어(checkCompletion)에 위임. |
-| conform-gate | `.agents/hooks/conform-gate.js` | conform-gate — PostToolUse on Edit\|Write. |
-| quarantine-notice | `.agents/hooks/quarantine-notice.js` | Quarantine Notice (SessionStart) — 보류 격리 자산 중 **만료·아카이브되어 사용자 처분을 기다리는** |
-| sdlc-gate-guard | `.agents/hooks/sdlc-gate-guard.js` | M2 — SDLC Gate Guard (PreToolUse on Edit\|Write). 판정은 공통 코어(checkSdlc)에 위임. |
-| structure-guard | `.agents/hooks/structure-guard.js` | M3 — Structure Guard (PreToolUse on Write\|Edit). 판정은 공통 코어(checkStructure)에 위임. |
+| charter-guard | `.agents/hooks/charter-guard.js` | !/usr/bin/env node |
+| charter-guard | `.agents/hooks/charter-guard.mjs` | Charter Guard (PreToolUse on Edit\|Write) — 헌장·hook·설정 파일의 AI 단독 수정 차단. |
+| completion-evidence-guard | `.agents/hooks/completion-evidence-guard.js` | !/usr/bin/env node |
+| completion-evidence-guard | `.agents/hooks/completion-evidence-guard.mjs` | M4 — Completion Evidence Guard (PreToolUse on Bash). 판정은 공통 코어(checkCompletion)에 위임. |
+| conform-gate | `.agents/hooks/conform-gate.js` | !/usr/bin/env node |
+| conform-gate | `.agents/hooks/conform-gate.mjs` | conform-gate — PostToolUse on Edit\|Write. |
+| quarantine-notice | `.agents/hooks/quarantine-notice.js` | !/usr/bin/env node |
+| quarantine-notice | `.agents/hooks/quarantine-notice.mjs` | Quarantine Notice (SessionStart) — 보류 격리 자산 중 **만료·아카이브되어 사용자 처분을 기다리는** |
+| sdlc-gate-guard | `.agents/hooks/sdlc-gate-guard.js` | !/usr/bin/env node |
+| sdlc-gate-guard | `.agents/hooks/sdlc-gate-guard.mjs` | M2 — SDLC Gate Guard (PreToolUse on Edit\|Write). 판정은 공통 코어(checkSdlc)에 위임. |
+| structure-guard | `.agents/hooks/structure-guard.js` | !/usr/bin/env node |
+| structure-guard | `.agents/hooks/structure-guard.mjs` | M3 — Structure Guard (PreToolUse on Write\|Edit). 판정은 공통 코어(checkStructure)에 위임. |

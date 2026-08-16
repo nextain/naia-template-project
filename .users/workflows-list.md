@@ -6,4 +6,7 @@
 
 | 이름 | 파일 | 설명 |
 |------|------|------|
-| _(등록된 workflows 없음)_ | — | — |
+| agents-init | `.agents/workflows/agents-init.md` | **IMPORTANT: Execute these steps NOW. Do not wait for user confirmation.** |
+| development-cycle | `.agents/workflows/development-cycle.yaml` | version: 1 |
+| issue-driven-development | `.agents/workflows/issue-driven-development.yaml` | version: 1 |
+| research-driven-development | `.agents/workflows/research-driven-development.yaml` | version: 1 |

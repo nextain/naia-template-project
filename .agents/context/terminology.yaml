@@ -1,0 +1,206 @@
+_copyright: "Copyright 2026 Nextain Inc. All rights reserved."
+
+# Terminology & Communication Policy — naia-adk 표준
+#
+# 적용 범위:
+#   - 모든 문서 (docs/, README, AGENTS.md, CLAUDE.md, GEMINI.md, .users/ mirror)
+#   - 코드 주석 (인라인 + 모듈 docstring)
+#   - JSON/YAML 안의 prose 텍스트 (description, why, notes)
+#   - PR / Issue 본문 / 커밋 메시지의 자연어 부분
+#   - 메모리 entry / .agents/progress / .agents/reviews
+#   - 외부 발표·슬라이드·대외 카피
+#
+# 적용 면제:
+#   - 코드 식별자 (변수 / 함수 / 클래스 / 파일명 / 모듈명) — 영문 그대로 OK
+#   - JSON/YAML key — schema 안정성 위해 영문 그대로 OK
+#   - GitHub URL / PR 번호 / 커밋 SHA — 변환 불가
+
+policy:
+  principle: |
+    우리만의 신조어·합성어를 만들지 않는다. 일반인이 알아들을 수 있는 용어를 default 로 쓰고,
+    학계용어와 약자는 첫 등장 시 한국어 풀이 + 괄호로 원문 표기를 동반한다.
+
+  why: |
+    1. 우리 신조어가 본문에 가득하면 사용자 본인도 못 알아본다 (2026-05-28 B2B 미팅 사고).
+    2. 학계용어를 풀이 없이 쓰면 일반 청중은 부담스러워한다.
+    3. 표준 용어와 신조어가 섞이면 신뢰성이 떨어진다.
+    4. 컨텍스트는 미래의 AI/사람 모두에게 읽힌다 — "지금 우리"만 아는 단어는 빠르게 무용해진다.
+
+  three_category_classification:
+    standard_terms_keep_as_is:
+      description: |
+        업계 표준 용어 / 제품명 / 컴공 일반 용어. 그대로 쓴다.
+      examples:
+        industry_acronyms:
+          - "AI / LLM / RAG / API / SDK / CLI / STT / TTS / VAD / E2E / MoE / RBAC / CRM"
+          - "SQLite / ICLR / LongMemEval / KsponSpeech / KEMDy20"
+        product_names:
+          - "Claude / Gemini / Codex / ollama / vLLM"
+          - "PyTorch / CUDA / TensorRT / ffmpeg / NumPy / Redis"
+          - "naia-adk / naia-agent / naia-memory / naia-os / naia-cognitive (브랜드명)"
+        cs_common_terms:
+          - "도메인 / 모듈 / 백엔드 / 런타임 / 게이트웨이 / 프리셋 / 폴백 / 카탈로그"
+          - "프로세스 / 스레드 / 컨테이너 / 컨피그 / 캐시 / 큐"
+      exception_harness:
+        rule: |
+          "harness" 는 외부 표면(발표·슬라이드·대외 README)에 사용 금지.
+          한국어 청중에게 "하네스"는 "안전 끈"으로 받아들여짐.
+        replace_with: "벤치마크 / 평가 체계 / 측정 도구"
+        internal_ok: |
+          내부 코드·메모리·.agents/ 안에서는 harness 그대로 OK.
+
+  development_work_units:
+    description: |
+      이슈, 사용자 목표, 코드 기능, 테스트를 서로 다른 수준으로 구분한다.
+      FE는 UI 요소나 화면 흐름의 줄임말이 아니라 Feature의 식별자다.
+    terms:
+      issue:
+        definition: "독립적으로 계획·개발·검증·병합할 수 있는 개발 전달 단위."
+      uc:
+        full_name: "Use Case"
+        definition: "행위자가 시스템을 사용해 달성하려는 목표와 관찰 가능한 결과."
+      fe:
+        full_name: "Feature"
+        definition: "하나 이상의 UC에서 재사용될 수 있는 코드 수준 기능 단위."
+        not: "버튼, 화면, 클릭 단계 또는 프론트엔드(Front-end)의 약자."
+      uct:
+        full_name: "Use Case Test"
+        definition: "UC의 사용자 여정과 관찰 가능한 결과를 검증하는 테스트."
+      ft:
+        full_name: "Feature Test"
+        definition: "FE의 코드 계약, 경계값과 실패 처리를 검증하는 테스트."
+    relationship: "Issue -> UC <-> FE -> UCT/FT. UC와 FE는 다대다 관계다."
+
+    academic_terms_translate_with_paren:
+      description: |
+        학계용어 / 측정 약어는 첫 등장 시 "한국어 풀이 (영문/약어 + 출처)" 형식.
+        두 번째 등장부터는 한국어 풀이 또는 약어 단독 OK.
+      pattern: "<한국어 풀이> (<영문 또는 약어>[, <출처 또는 풀이>])"
+      examples:
+        - "예측적 동기화 (Predictive Entrainment, Keller & Appel 2010)"
+        - "세계 모델 (World Model, 얀 르쿤 2022)"
+        - "음정 곡선 (F0 contour)"
+        - "개방 루프 / 폐쇄 루프 (open-loop / closed-loop)"
+        - "글자 오류율 (CER)"
+        - "단어 오류율 (WER)"
+        - "주관 청취 점수 (MOS, 1-5)"
+        - "첫 응답까지 시간 (TTFB)"
+        - "동기화 어긋남 (sync drift)"
+
+    our_neologisms_must_replace:
+      description: |
+        우리만 만든 합성어. 발견 즉시 평이한 한국어 또는 표준 용어로 교체.
+      examples_to_replace:
+        - from: "4-CLI judge ensemble"
+          to: "외부 AI 4종 교차 검증"
+        - from: "skills overlay"
+          to: "업종별 기능 모듈"
+        - from: "vertical preset"
+          to: "업종 사전 설정"
+        - from: "ref_audio hotswap"
+          to: "음성 즉시 교체"
+        - from: '"score memory" (prose)'
+          to: "곡 기억 모듈"
+          code_identifier_ok: "score_memory_poc.py 같은 파일·식별자는 그대로"
+        - from: '"emotion vec" (prose)'
+          to: "감정 벡터"
+          code_identifier_ok: "JSON key emotion_vec 는 그대로"
+        - from: '"spectrum switch" (prose)'
+          to: "말↔노래 전환"
+        - from: '"mismatch DSP" (prose)'
+          to: "음정 차이 보정"
+        - from: '"look-ahead predictor" (prose)'
+          to: "선행 예측기 (look-ahead predictor)"
+          note: "학계 paraphrase 인 경우 두 번째 분류 적용"
+
+gates:
+  detection:
+    - "사용자 본인이 처음 보고 갸우뚱하면 그게 신조어 신호 → 즉시 교체."
+    - "컴공 교과서·AI 업계 표준 문서·논문에 그대로 나오면 표준. 아니면 신조어."
+    - "Google/검색에 한 줄 안 보이면 신조어 후보 — 풀이 또는 교체."
+    - "Brand name (naia-* 시리즈) 은 게이트 면제. 단 첫 등장 시 '음성 인지 모듈 (naia-cognitive)' 식 한국어 풀이 권장."
+
+  enforcement_points:
+    review:
+      - "phase 7 (Review) 와 phase 9 (Post-test Review) 에서 terminology gate 통과 확인."
+      - "외부 표면 (블로그·슬라이드·대외 README) commit 전 사용자 본인 1회 통독."
+    code_review:
+      - "PR 의 markdown / docstring / 주석 안 신조어 발견 시 즉시 교체 제안."
+
+definitions:
+  _why: |
+    policy 는 "어떻게 쓰나"(신조어 금지·풀이 규칙), definitions 는 "무슨 뜻인가"(용어의 정의).
+    둘은 다르다. 정의가 없으면 사람도 AI 도 추측하고, 추측이 코드가 되면 드리프트다.
+    사고 실례 — 2026-07-13: AI 가 `FE` 를 "Frontend" 로 오독해 엉뚱한 계약을 작성.
+    (그 전에 UC/FE 를 논의했으나 "너무 길어서" 사전에 못 들어갔던 것이 원인.)
+
+  rules:
+    - "여기 없는 약어는 문서·이슈·커밋에 쓰지 않는다. 새 약어는 **먼저 여기 추가**한다."
+    - "정의 없는 약어를 만난 AI 는 **추측하지 말고 되묻는다** (되묻기 = 1급 행위)."
+    - "용어를 바꾸면 코드·문서보다 **이 사전이 먼저** 바뀐다."
+
+  development_method:
+    chain: "계약 → UC → UC 테스트 → FE → FE 테스트 → 구현 → 검증"
+    terms:
+      - term: "계약 (contract)"
+        means: "개발 전에 못 박는 규칙 문서(.agents/context/*). 일탈은 게이트(마커)로만 연다."
+      - term: "UC (Use Case, 유저 시나리오)"
+        means: "**무엇을 원하는가.** 페이지 + 시나리오(행동 → 기대 결과). 개발 착수의 입장권."
+        not: "설계도·구현안이 아니다. 사용자 관점의 요구다."
+      - term: "UC 테스트 (유저 시나리오 테스트)"
+        means: "UC 의 시나리오를 실제로 밟아 기대 결과가 나오는지 확인. **완료 판정의 실행.**"
+      - term: "FE (FEature, 기능)"
+        means: "**UC 를 이루기 위해 무엇을 만들 것인가**의 기능 명세."
+        not: "⚠ **Frontend 가 아니다.** 프론트엔드를 뜻하려면 '프론트엔드'라고 풀어 쓴다."
+      - term: "FE 테스트 (기능 테스트)"
+        means: "FE(기능)가 명세대로 동작하는지 검증."
+      - term: "드리프트 (drift)"
+        means: "소스(git)와 실제(서버·운영)가 어긋난 상태. 반복 사고의 공통 뿌리."
+
+  layer_notation:
+    _why: |
+      `L1`/`L2`/`L3` 와 "three-layer" 가 이 저장소에서 **서로 다른 세 축**으로 쓰인다.
+      축을 밝히지 않은 "L2" 는 추측을 부르고, 추측이 계약이 되면 드리프트다.
+      사고 실례 — 2026-08-15: 축을 구분하지 않아 유저 접점 게이트웨이(오케스트레이션 L3)를
+      "1레이어 제품" 으로 오기했고, 그 정의 위에서 2 주간 잘못된 층을 측정했다.
+
+    axes:
+      - axis: "오케스트레이션 층위 (orchestration layer)"
+        notation: "L1 / L2 / L3"
+        means: "누가 누구를 부르고 감시하는가. L3 비서 → L2 이슈 리더 → L1 워커."
+        source: ".agents/context/development-model-routing.yaml (layer_contract)"
+        note: "감시 방향은 L1←L2, L2←L3, L3←human_owner. 자기 감시는 성립하지 않는다."
+      - axis: "조사 깊이 (IDD scope)"
+        notation: "L1 / L2 / L3"
+        means: "어디까지 들여다볼 것인가. 조사 범위의 단계이지 호출 계층이 아니다."
+        source: ".agents/context/gstack-hooks.md"
+      - axis: "벤치마크 인과층 (causal layer)"
+        notation: "three-layer"
+        means: "무엇을 원인으로 분리해 측정하는가. 모델 능력 / naia-agent 런타임 / naia-adk 거버넌스."
+        source: ".agents/requirements/BMC-001-three-layer-benchmark.yaml"
+        note: "오케스트레이션 층위와 무관한 축이다. 합산 점수 금지."
+
+    rule: |
+      문서·이슈·커밋에서 `L2` 처럼 축 없이 쓰지 않는다. 처음 등장할 때 축을 밝힌다
+      (예: "오케스트레이션 L2", "IDD scope L2"). 축이 불분명한 표기를 만난 AI 는
+      추측하지 말고 되묻는다.
+
+  project_glossary: |
+    프로젝트 고유 도메인 용어(예: onmam 의 포털·홈피·lynx·채널)는 각 프로젝트의
+    `.agents/context/glossary.md` 에 둔다. 이 파일은 **전 포크 공통 방법론 용어**만 담는다.
+
+cross_references:
+  related_memories:
+    - "feedback_neologism_no_external_exposure (적용 범위 확장 SoT)"
+    - "feedback_copy_tone_show_dont_tell (대외 카피 톤)"
+    - "project_naia_ax_businessadk_taxonomy (public-surface-copy SoT)"
+
+  related_files:
+    - ".agents/context/writing-style.json (K-Startup SNS persona — 별 SoT, 어조 정책)"
+    - ".agents/context/contributing.yaml (커밋·이슈 규칙)"
+
+revision_history:
+  - date: "2026-07-12"
+    note: "Issue/UC/FE/UCT/FT 정의와 UC-FE 다대다 추적 관계 추가."
+  - date: "2026-05-28"
+    note: "신조어 금지 정책을 외부 표면 → 내부 컨텍스트까지 확장. 사용자 명시 지시 (Phase 0 review 시점)."

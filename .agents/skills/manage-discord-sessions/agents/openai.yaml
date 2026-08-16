@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Discord Sessions"
+  short_description: "Observe and recover Discord jobs using Codex or Claude"
+  default_prompt: "Inspect Discord session service health, active jobs, safe activity events, and completion evidence from the ADK-local state."
