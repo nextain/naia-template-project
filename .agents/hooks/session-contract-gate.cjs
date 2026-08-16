@@ -11,7 +11,7 @@ const sessionContract = require("../../.agents/hooks/core/session-contract.cjs")
 const HARNESS_OFF = new Set(["off", "0", "false", "no"]);
 const HARNESS_ENV_VARS = ["AI_HARNESS", "CLAUDE_HARNESS", "CODEX_HARNESS"];
 const HARNESS_CONFIG_DIRS = [".claude", ".codex"];
-const ENTRY_POINTS = new Set(["AGENTS.md", "CLAUDE.md", "GEMINI.md"]);
+const ENTRY_POINTS = new Set(["AGENTS.md", "CLAUDE.md", "GEMINI.md", "OPENCODE.md", "CODEX.md"]);
 
 function normalizedToolName(name) {
 	const leaf = String(name || "").split(/[.:/]/).pop().toLowerCase();

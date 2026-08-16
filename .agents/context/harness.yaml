@@ -1,0 +1,327 @@
+# Harness Verification Checklist
+# Copyright 2026 Nextain Inc. All rights reserved.
+#
+# Checklist for verifying harness (hooks + rules + workflow) correctness.
+# Use when adding/modifying hooks, rules, or workflow steps.
+
+version: 1
+
+# ─── Architecture (G-OC01: tool-agnostic harness) ─────────────
+# 2026-05-18: the harness was refactored from per-tool monolithic hooks
+# into a tool-agnostic core, then proven on a second host (pi).
+architecture:
+  core:
+    file: ".agents/hooks/core/harness-core.js"
+    role: "host-neutral SoT — session/anti-compact (buildSessionInject, compactReminderMessage) + sanitizers. ZERO host coupling."
+  policies:
+    files: [".agents/hooks/policies/bash.js", ".agents/hooks/policies/edit.js"]
+    role: "host-neutral guard policies (command|data,opts)->{reason}|{block}|{allow}|{postContext}|null. No process.exit, no host I/O envelope."
+  host_adapters:
+    claude:
+      files: [".claude/hooks/_claude-bash-guard.js", ".claude/hooks/_claude-edit-hook.js", "+ thin .claude/hooks/*.js adapters"]
+      role: "Claude Code stdin/exit envelope around the shared policies. Behavior byte-identical to the pre-refactor monolithic hooks."
+    pi:
+      file: ".pi/extensions/naia-harness.ts"
+      role: "earendil-works/pi extension — maps pi events (tool_call/before_agent_start/tool_result) to the SAME policies + core. ZERO core change."
+  fail_mode_invariant: "HARDCODED per guard, never data: pr-guard fail-CLOSED; the other 5 bash guards fail-OPEN. Preserved on BOTH hosts (adversarially proven)."
+  status:
+    part1: "COMPLETE — tool-agnostic extraction, byte-identical (golden 8/42/19 + E2E 64 + system 13)."
+    part2: "COMPLETE & adversarially 2-consecutive-clean (6 rounds) — policy neutralization + pi adapter + real pi@0.74.1 runtime gate (20/20). Cross-tool goal (same harness on Claude + pi, zero core change) MET & verified."
+    partB: "declarative guard_policies schema — design-reviewed 3 rounds -> FIRM DEFER (no sound integrity root for SoT-as-policy; only 2/9 guards qualify; cross-tool goal already met). See .agents/progress/g-oc01-partB-forbidden-actions-plan.md."
+  gates:
+    - "scripts/run-native-harness-tests.cjs — Windows/Linux native aggregate that accepts only Node entrypoints, invokes them directly with shell=false, and supplies hostile WSL/Bash/MSYS variables; it does not claim to observe every descendant process"
+    - ".claude/hooks/beh-supervise.js — Windows Job helper pins transitive CPython to an absolute PE path and verifies sys.platform=win32 plus sys.executable identity before launch"
+    - ".claude/hooks/e2e/run.sh — native Linux 64 real-condition contract assertions; never a Windows dependency"
+    - ".claude/hooks/e2e/scenario.sh — native Linux 13-step system E2E via real settings.json dispatch; never a Windows dependency"
+    - ".claude/hooks/e2e/pi-runtime-e2e.mjs — real pi-runtime gate, 20/20 (prereq: npm i @earendil-works/pi-coding-agent@0.74.1)"
+
+request_contract_integrity:
+  status: "REVIEW_ONLY rollout: shared core, lifecycle parity, and planning/integration role separation exist, but preservation enforcement is not release-eligible until credentials, trusted real-entry probes, vendor-origin attestation, comparison/convergence receipts, and project external-effect adapters are provisioned and verified"
+  config: ".agents/context/request-contract.json"
+  schema: "packages/artifacts-spec/schemas/request-contract.schema.json"
+  core:
+    files: [".agents/hooks/core/request-contract.js", ".agents/hooks/core/request-contract-adapter.js", ".agents/hooks/core/request-contract-review-runner.js", ".agents/hooks/core/preservation-contract.js"]
+    role: "exact prompt hash chain, complete source classification, scope epochs, signed authority receipts, change trace, product-surface preservation, review chain, completion gate, successful-lineage retention compaction; incomplete lineages remain resume-capable and sticky"
+  host_adapters:
+    claude:
+      registry: ".claude/settings.json"
+      adapter: ".claude/hooks/request-contract.js"
+    codex:
+      registry: ".codex/hooks.json"
+      adapter: ".codex/hooks/request-contract.cjs"
+  lifecycle_events: [PreToolUse, SessionStart, UserPromptSubmit, PostToolUse, PreCompact, PostCompact, Stop]
+  enable: "INSTALLATION and ENFORCEMENT are separate. Install hooks/config without governing product work; enable only after the three credentials and every executable allowlist are provisioned and a project readiness check passes. REQUEST_CONTRACT=on or node scripts/request-contract.cjs enable is forbidden before that gate."
+  fail_mode: "An unprovisioned repository stays REVIEW_ONLY and does not force-enable governed mode merely because preservation.required is true. Once credentials and allowlists are provisioned and installation_state is explicitly set to enforced, governed mode fails closed."
+  authority_root: "external user-presence signer with pinned public key; hardware/non-exportable truth is an explicit provisioning and signer trust boundary"
+  source_capture: "native-user provenance is derived only from an exact registered UserPromptSubmit envelope and never from a caller-supplied origin label; every rejected native prompt envelope, including a valid prompt blocked by duplicate runtime bindings, is preserved exactly with that derived provenance in quarantine before the adapter fails closed; every scope authority must cite a native-user source in addition to its signed user-presence receipt"
+  reviewer_boundary: "The general runtime minimum is two distinct Clean receipts. Preservation requires four evidence-separated roles in planning and four new evidence-separated roles in integration. Runtime records bind stage and distinct role-specific evidence-view digests, require planning×4 before the first implementation mutation, retain the planning seal across implementation-only changes, and bind integration×4 to the current work revision. REVIEW_ONLY remains mandatory while any other REQUIRED/PENDING control, including vendor-origin proof or project-complete external-side-effect gating, is unresolved."
+  preservation_evidence_boundary:
+    status: "REQUIRED/PENDING runtime alignment"
+    baseline_inventory: "A project adapter must enumerate the exact complete baseline surface set from the immutable baseline. A contract-authored subset is not sufficient; missing, additional, renamed, or unreachable surfaces require explicit disposition and evidence."
+    capability_probe: "Agents must not hand-author capability probe JSON. A trusted, allowlisted project-adapter runner must execute the real entry, sign command/runner/exit/result/subject bindings, and emit the receipt from observed output. Current shape/digest validation alone is not execution attestation."
+    vendor_origin: "Vendor provenance requires an attested origin repository identity plus immutable commit/tree and a digest computed from that origin tree. URL/commit syntax plus a local subtree digest alone is insufficient."
+    publication: "Built-in release-command regexes are diagnostic coverage, not a complete security boundary. Each project must declare external-side-effect operations through a strict adapter gate. REVIEW_ONLY permits local commits only; remote review push remains forbidden until an exact signed checkpoint-publication operation is implemented."
+  atomicity: "repository + lineage locks with complete-owner atomic publication, directory-identity verification, serialized process-start-aware stale takeover, Windows host identity from native process start time at SessionStart and lock takeover with the bound identity reused for later lifecycle events (no writable disk cache), fsynced file/parent create-replace-unlink ordering, fail-closed unit/quarantine listing and recursive workspace traversal, strict bounded numeric configuration, strict Git command/parse failures, collision-free platform-native workspace path keys, Windows workspace modes normalized from the Git index instead of meaningless POSIX stat bits, recursive Git-tree genesis baseline, transaction-recoverable lifecycle-state/head replacement, head-pinned lifecycle-state/baseline/genesis-workspace digests, exact prompt-partition obligation atoms carried through every target/criterion/REQ/UC/UC-test/FE/FE-test/implementation/evidence and atom-specific trace edge, sticky governance while any uncompacted/staged unit or unconsumed quarantine exists, validated successful-workspace handoff into each new lineage, disable-command rejection during sticky governance, three exact private pre-binding control-input paths via Claude Write/Edit or strict single-file Codex apply_patch plus shell-metacharacter-free exact Node command parsing and pinned review executables to avoid bind/review self-deadlock, prepared crash-recovery source/bind/review/resume/session/state transactions, session-owned Stop-time canceled mutation-lease reconciliation with review issuance blocked while any unrelated lease is active, native-stdin event presence/equality and event-specific Codex lifecycle stop envelopes, Claude/Codex apply_patch preflight parity, destination-bound and retry-idempotent quarantine adoption, canonical immutability of disposed directives and all tombstones, one mixed-operation pending authority transaction, digest-protected invocation manifests including writer process identities, repository-locked double completion validation with a review-bound completion proof, non-counting proof-generating/blocking native PreCompact plus one-time client/session/proof-bound authorization consumed by PostCompact, proof-verified double-validated handoff-aware successful retention compaction that journals the exact receipt, atomically stages the unit, revalidates the full staged proof after restart, and only then removes consumed quarantine/private state, compaction-persistent global review/run/context/process/execution ID claims, and random retry-stable non-sensitive compaction receipt IDs"
+  honest_limits:
+    - "disabled hooks and untrusted host hook configuration are outside enforcement"
+    - "a coordinated actor able to rewrite all local records is outside the local integrity model"
+    - "external side effects and mutations fully completed and reverted between observed hook boundaries may be invisible"
+    - "the core verifies signed user-presence/non-exportable assertions but cannot independently attest the external signer's hardware properties"
+    - "deterministic parity covers the tracked native adapter processes; installed host-client dispatch is separate operational smoke evidence; Windows support never depends on WSL, Cygwin, MSYS2, a Linux VM, or a Linux container"
+    - "current preservation probes validate declared JSON and content bindings but do not independently attest that a real product entry executed; trusted adapter-runner receipts are pending"
+    - "current vendor validation checks immutable-ref syntax and local tree equality but does not fetch or attest the named origin tree; origin attestation is pending"
+    - "role records now distinguish planning from integration, but comparison/convergence receipts remain pending; release regexes are diagnostic only and do not enumerate every external side effect"
+    - "USR-001 through USR-007 predate the immutable source ledger and their native messages were not recoverable from local session archives; the validator records and blocks on this gap instead of reconstructing human provenance from AI-authored requirements"
+
+requirement_review_trace:
+  status: "always-on; independent of the opt-in request-contract runtime above"
+  purpose: "the RCI requirement files claim four-stage review evidence; this makes the claim falsifiable without the governed runtime being enabled"
+  scripts:
+    scope: "scripts/request-contract-review-scope.cjs"
+    validator: "scripts/validate-request-contract-requirements.cjs"
+    issuer: "scripts/issue-review-receipt.cjs"
+  store: ".agents/requirements/reviews/ (receipt JSON + verbatim reviewer transcripts under logs/)"
+  binding: "a stage names receipt ids, not a free-text label. Each receipt must exist, carry a Clean verdict with zero findings from the stage's minimum distinct reviewers, preserve each reviewer's untouched transcript and re-hash to it, list only requirements its reviewers reported COVERED, enumerate every required path under the reviewer's Files Read attestation, bind the issuer-derived path/object-type/size/SHA-256 manifest supplied for review, and match the scope_digest of the tree it judged. Files Read is a reviewer assertion, not mechanical proof of cognitive inspection; the supplied-file manifest and scope digest prove which exact working-tree objects were made reviewable. Symlinks bind both their link payload and the resolved in-repository target bytes; targets outside the repository are rejected. The opt-in runtime can sign the assertion, while the ordinary Git receipt remains forgeable by a writer and is documented as such. The digest uses current working-tree bytes from tracked and non-ignored untracked review files, including source-ledger artifacts; it excludes reviews lines and the receipt store so recording a verdict does not invalidate it. Editing, adding, or deleting reviewed content after a round moves the digest and voids the receipt."
+  honest_limits:
+    - "the receipt store is an ordinary Git-tracked directory: an agent with write access can forge a receipt together with a matching fabricated transcript, and both hash checks will pass. What this closes is the cheap failure — declaring review evidence that was never produced, or keeping a verdict alive across edits to the reviewed code. Closing forgery itself requires the opt-in runtime above, whose reviewer runs under bubblewrap isolation and whose receipts are signed from a process identity distinct from the writer."
+    - "the reviewed file set includes every current staged/unstaged/non-ignored-untracked change, feature-named repository paths, every code/test path declared by requirements, source-ledger artifacts, and a short list for governing skills/review machinery. Unchanged dependencies outside those declarations remain out of scope; intent still cannot be inferred without a trace or explicit declaration."
+    - "reviewer identity is tool+model. Two runs of the same model do not count as two reviewers, by design; the caller must supply distinct reviewers to reach quorum."
+
+# ─── Verification Checklist ───────────────────────────────────
+
+checklist:
+  - id: H1
+    name: false_positive_test
+    description: "Does the hook block things it shouldn't?"
+    how_to_verify:
+      - "Write 5 test cases: 3 that SHOULD pass, 2 that SHOULD block"
+      - "Run each with: echo '<json>' | node .claude/hooks/<hook>.js"
+      - "Verify exit behavior and output JSON"
+    common_failures:
+      - "Regex matching quoted strings (e.g. echo 'git reset --hard' triggering destructive-git-guard)"
+      - "Path matching too broadly (e.g. a file named 'design-notes.md' in a non-design dir)"
+
+  - id: H2
+    name: root_cause_vs_symptom
+    description: "Is the hook treating root cause or suppressing symptoms?"
+    how_to_verify:
+      - "Ask: 'What behavior does this hook prevent?'"
+      - "Ask: 'Can the undesired outcome still happen through a different path?'"
+      - "If yes → the hook is symptom suppression, not root cause treatment"
+    example:
+      symptom_suppression: "Block 'git reset --hard' (symptom: destructive action)"
+      root_cause: "Require user confirmation before any destructive action (root: missing checkpoint)"
+
+  - id: H3
+    name: scope_check
+    description: "Does the hook scope match its intent?"
+    how_to_verify:
+      - "PreToolUse: does it fire BEFORE the action? Is that early enough?"
+      - "PostToolUse: does it fire AFTER? Is it too late (irreversible action already taken)?"
+      - "Rule: hooks that prevent irreversible actions MUST be PreToolUse"
+
+  - id: H4
+    name: process_vs_action_constraint
+    description: "Is there a process constraint paired with every action constraint?"
+    how_to_verify:
+      - "For every 'you cannot do X' rule, check: 'what SHOULD the AI do instead?'"
+      - "If no positive alternative is defined → the rule is incomplete"
+    example:
+      incomplete: "NEVER change design decisions"
+      complete: "NEVER change design decisions. If design differs from implementation → follow escalation_path"
+
+  - id: H5
+    name: permission_model_coverage
+    description: "Is the AI's role (implementer vs reviewer) clearly defined for each file type?"
+    how_to_verify:
+      - "Check agents-rules.json permission_model covers all file types the AI touches"
+      - "Verify design_doc_paths is up to date"
+      - "Test: design-doc-guard.js blocks edits to docs/design/ files"
+
+  - id: H6
+    name: escalation_path_defined
+    description: "For every 'stop and report' rule, is the escalation path explicit?"
+    how_to_verify:
+      - "Check agents-rules.json escalation_path covers: design_gap_found_during_build, design_flaw_found_during_review"
+      - "The path must be: find → report → wait. Not: find → silently fix"
+
+  - id: H7
+    name: review_quality
+    description: "Are iterative reviews using /review-pass with adversarial framing?"
+    how_to_verify:
+      - "Check IDD workflow review and post_test_review phases reference '/review-pass'"
+      - "Check /review-pass skill exists at .agents/skills/review-pass/SKILL.md"
+      - "Verify the general two-consecutive-Clean floor is enforced"
+      - "For preservation work, separately require planning×4 and integration×4 evidence-separated roles; a single four-role runtime streak is not equivalent"
+
+  - id: H8
+    name: original_request_integrity
+    description: "Can a review or completion claim silently omit, reclassify, or narrow any original or later user directive?"
+    how_to_verify:
+      - "Replay missing-genesis, source deletion/tamper, later-directive, scope-removal, stale-review, and client-parity fault cases"
+      - "Require every actionable source to map through requirement, use case, use-case test, feature, feature test, implementation, and evidence"
+      - "Require signed user-presence authority for initial binding and every scope epoch transition"
+      - "Require the general two current, distinct, externally signed exact-coverage Clean receipts"
+      - "Additionally require four role-specific first verdicts in planning and four new role-specific first verdicts in integration, with stage and evidence-view separation attested"
+      - "Reject agent-authored probe JSON, unattested vendor origins, incomplete baseline inventories, and any remote REVIEW_ONLY publication"
+      - "Run node .claude/hooks/test/run-request-contract-test.js and the real client registration smoke tests"
+
+# ─── Retroactive Verification of Existing Hooks ───────────────
+
+existing_hooks:
+  destructive_git_guard:
+    file: ".claude/hooks/destructive-git-guard.js"
+    type: PreToolUse
+    H1: "PASS — strips quoted strings before regex match"
+    H2: "PASS — requires user confirmation (process constraint)"
+    H3: "PASS — PreToolUse, fires before git command"
+    H4: "PASS — paired with: 'ask user first'"
+    verified_date: "2026-03-20"
+
+  design_doc_guard:
+    file: ".claude/hooks/design-doc-guard.js"
+    type: PreToolUse
+    H1: "PASS — regex requires /design/ as directory component (not filename). src/design-notes.md passes; design/README.md blocks (correct)."
+    H2: "PASS — blocks before edit, requires surfacing to user (process constraint)"
+    H3: "PASS — PreToolUse, fires before Edit|Write"
+    H4: "PASS — paired with: escalation_path in agents-rules.json"
+    H5: "PASS — permission_model defined in agents-rules.json"
+    H6: "PASS — escalation_path covers both build-phase and review-phase discovery"
+    verified_date: "2026-03-21"
+
+  pr_guard:
+    file: ".claude/hooks/pr-guard.js"
+    type: PreToolUse
+    H1: "PASS — regex (?:^|[;&|])\\s*gh\\s+pr\\s+create\\b catches real commands and chained (cd proj && gh pr create) but NOT text inside echo args or --body content. Verified T6-T10 (5/5)."
+    H2: "PASS — root cause: maintainer should commit directly"
+    H3: "PASS — PreToolUse"
+    H4: "PASS — paired with: commit directly to main"
+    verified_date: "2026-03-22"
+    test_run: "2026-03-22 — T6,T7,T8,T9,T10: 5/5 PASS"
+
+  commit_guard:
+    file: ".claude/hooks/commit-guard.js"
+    type: PreToolUse
+    H1: "PASS — regex (?:^|[;&|])\\s*git\\s+commit\\b catches real commands and chained (git add && git commit) but NOT git commit inside echo args. Missing progress file → silent pass. Verified T1-T5 (5/5)."
+    H2: "PASS — blocks the git commit itself before it runs (PreToolUse). Root cause: IDD phases enforce quality gates."
+    H3: "PASS — PreToolUse. Upgraded from PostToolUse (2026-03-22) to block before commit executes."
+    H4: "PASS — reason message lists remaining phases, guiding next steps."
+    verified_date: "2026-03-22"
+    test_run: "2026-03-22 — T1,T2,T3,T4,T5: 5/5 PASS"
+
+  cascade_check:
+    file: ".claude/hooks/cascade-check.js"
+    type: PostToolUse
+    H1: "PASS — path regex requires exact directory components (e.g. .agents/context/*.yaml). Unrelated edits pass silently."
+    H2: "INFO — PostToolUse is advisory (reminder), not blocking. Mirror updates are AI responsibility, not automated. Acceptable: mirrors are human-readable, not machine-critical."
+    H3: "PASS — PostToolUse is appropriate for advisory cascades (no irreversible action to prevent)."
+    H4: "PASS — message specifies exactly which mirrors to update."
+    verified_date: "2026-03-22"
+
+  session_inject:
+    file: ".claude/hooks/session-inject.js"
+    type: UserPromptSubmit
+    H1: "PASS — no-op if progress directory is missing, empty, or has no binding for the current session. Unbound state is internal and never exposed on every user prompt."
+    H2: "PASS — anti-compact mechanism: injects session state on every prompt so context compression cannot erase active issue/phase."
+    H3: "PASS — UserPromptSubmit is the correct event (fires before AI processes the prompt)."
+    H4: "PASS — bound-session output is advisory context, not a constraint. Unbound mutation safety is enforced separately at PreToolUse by session-contract-gate, which allows progress binding writes and read-only inspection."
+    verified_date: "2026-07-31"
+    resolution_order:
+      - "P0: progress file with `session_id` field == current session_id (most authoritative — survives session-map corruption)"
+      - "P1: .session-map.json[session_id] → progress file path"
+      - "(no auto-bind: if neither matches, exit silently — never guess and never expose internal state to the user)"
+    active_definition: "mtime within 24h AND current_phase != 'close' (used only by explicit /harness status, not injected on UserPromptSubmit)"
+    opt_out:
+      env: "CLAUDE_HARNESS in {off, 0, false, no}"
+      file: "<cwd>/.claude/no-harness (presence = opt-out, any content)"
+    explicit_control: ".claude/commands/harness.md → /harness <status|off|on|bind|unbind>"
+    notes:
+      - "2026-04-26: P2-singleton auto-binding REMOVED. In multi-session workflows, the previous behavior silently bound new sessions to whatever single active progress file existed, causing cross-session context drift."
+      - "2026-04-26: session-map writes are now atomic (tmp + rename) to prevent race-condition corruption when multiple sessions update concurrently."
+      - "2026-04-26: AI receives an explicit nudge to write `session_id` into the progress file when bound via P1, strengthening the P0 anchor for resilience."
+      - "2026-07-31: unbound UserPromptSubmit exits silently. Binding guidance is available through explicit /harness status, while session-contract-gate preserves mutation safety at the action boundary."
+
+  host_permission_boundary:
+    rule: "Repository hooks and messenger child profiles must use no-prompt execution (`approval_policy=never` for Codex, `dontAsk`/plan for Claude). A host Codex sandbox escalation prompt is a separate platform control and cannot be disabled by repository code."
+    operator_behavior: "Prefer in-sandbox commands, reuse narrowly approved command prefixes, and batch any unavoidable host escalation into one explicit final verification step. Never describe a host approval prompt as fixed by a child approval profile."
+    regression_evidence:
+      - ".agents/skills/manage-discord-sessions/tests/discord-gateway.test.mjs — stale managed profiles are replaced by current no-prompt profiles"
+      - ".agents/skills/manage-discord-sessions/tests/backend-runner.test.mjs — child command construction pins approval_policy=never and rejects approval UI output"
+
+  deploy_guard:
+    file: ".claude/hooks/deploy-guard.js"
+    type: PreToolUse
+    H1: "PASS — strips quoted strings, skips echo/printf. Verified via test-deploy-guard.cjs."
+    H2: "PASS — root cause: AI deploying to prod without approval"
+    H3: "PASS — PreToolUse, fires before deploy command"
+    H4: "PASS — paired with: approval system (.claude/deploy/approvals.json)"
+    coverage: "vercel --prod, gcloud run deploy, gcloud app deploy, gcloud builds submit, gcloud run services update/replace, docker push (GCP registries)"
+    verified_date: "2026-04-05"
+
+  git_push_guard:
+    file: ".claude/hooks/git-push-guard.js"
+    type: PreToolUse
+    H1: "PENDING"
+    H2: "PASS — root cause: AI pushed broken code without confirmation"
+    H3: "PASS — PreToolUse, fires before git push"
+    H4: "PASS — paired with: ask user with remote/branch info"
+    verified_date: "2026-04-05"
+
+# ─── Design / Proposal Review Questions (G-AB01) ──────────────
+# Absorbed from harness-books Book1 Appendix A.8 (proposal review set, L106-119).
+# Source brief: .agents/progress/harness-books-integration-findings-2026-06-18.md (section A).
+# H1-H7 above review OUR HOOKS' quality. The questions below review an AGENT/HARNESS
+# DESIGN PROPOSAL (a different artifact). H5 (permission_model_coverage) partially
+# overlaps SA2; the rest are new coverage. Use at: new harness/agent design PR,
+# IDD Plan-gate, or when absorbing an external harness.
+
+design_review_questions:
+  source: "harness-books Book1 Appendix A.8 (L106-119)"
+  applies_to: "agent/harness design proposals (hook quality is covered by H1-H7)"
+  questions:
+    - id: SA1
+      q: "Which behaviors are constrained by prompt, and which are enforced by runtime?"
+    - id: SA2
+      q: "Who blocks tool misuse, and at what layer?"
+    - id: SA3
+      q: "When is context compacted, and how are work semantics (plan / skills / key files / tool state) reconstructed afterward?"
+    - id: SA4
+      q: "Are prompt-too-long and max-output-tokens recovered differently?"
+    - id: SA5
+      q: "After an interruption, how is transcript consistency maintained with tool results?"
+    - id: SA6
+      q: "In multi-agent flows, who owns synthesis and who owns verification?"
+    - id: SA7
+      q: "Does failure recovery include circuit breakers and anti-loop guards?"
+    - id: SA8
+      q: "How does the team audit what the agent did and why?"
+  red_flag: "If answers frequently reduce to 'we can add that later', the runtime is likely not truly designed yet."
+
+# ─── Current enforcement state (2026-08-15) ───────────────────
+# Recorded here because the released state differs from what AGENTS.md describes.
+enforcement_state:
+  session_contract_gate: disabled
+  disabled_by: [".claude/no-harness", ".codex/no-harness", ".pi/no-harness"]
+  effect: "session-contract-gate.cjs returns early and enforces nothing"
+  unaffected_guards:
+    - "git-push-guard (force push)"
+    - "destructive-git-guard (reset --hard against remote refs, history rewrite)"
+    - "commit-guard, deploy-guard, email-send-guard, gcs-guard, rdd-experiment-guard"
+  why: |
+    Measured on a fresh clone with enforcement on: an unbound session is blocked from
+    every mutating shell command, including `npm test`, `git commit`, and `mkdir`.
+    Read-only shell and ordinary file edits pass. The file-mutation path was already
+    widened for this exact reason (see the comment above unboundOrdinaryMutationAllowed);
+    the shell path never received the same treatment, so pre-enumeration remains a
+    ceiling there.
+  doc_divergence: |
+    AGENTS.md / CLAUDE.md / GEMINI.md Session Boundaries still state that mutating shell
+    commands require a session contract. That text describes the intended design, not
+    current runtime behavior. The entrypoints are locked to an approved canonical digest,
+    so they were not edited without separate approval.
+  removal_conditions:
+    - "unbound `npm test` passes with enforcement on"
+    - "unbound ordinary commit passes with enforcement on"
+    - "force push, remote-ref reset --hard, and governance-file mutation still blocked"
+    - "cross-host regression tests pass"
+  tracking: "https://github.com/nextain/naia-template-project/issues/34"

@@ -1,361 +1,864 @@
 {
-	"$schema": "https://nextain.com/schemas/agents-rules/v2",
-	"version": "2.0.0",
-	"project": "{{PROJECT_NAME}}",
-	"description": "Machine-readable rules for AI tools. SoT for all enforcement gates. Edit this file, then run scripts/sync-harness-mirrors.sh.",
-	"context_boundaries": {
-		"shared_entrypoints_are_indexes": "AGENTS.md is a stable index; all declared tool files are byte-identical mirrors. They never hold a session goal, issue state, implementation plan, completion claim, or artifact wording.",
-		"session_contract_authority": "Mutation requires one explicit local contract under .agents/session-contracts/: registry pointer, active digest, session_bindings, progress contract reference, and non-overlapping target_ownership must agree.",
-		"legacy_read_only": ".agents/context/process-status.json current_work and progress session_id fields are retained for migration evidence only and never grant mutation authority.",
-		"context_is_not_output": "Background/reference/example/internal context is not code, UI, or external-document content without explicit atom-level derive, quote, or require authority for a declared output audience."
-	},
-	"charter_immutability": {
-		"description": "확정된 헌장 파일은 AI가 절대 단독 수정 불가. 수정 시 사용자 명시 승인 + 새 이슈 등록 필수.",
-		"charter_files": [
-			".agents/context/agents-rules.json",
-			"docs/project-structure.md"
-		],
-		"violation_action": "BLOCK — 사용자 승인 없이 헌장 파일 수정 시 작업 중단",
-		"status": "ACTIVE"
-	},
-	"resource_registry": {
-		"description": "모든 파일/폴더/패키지는 생성 전 레지스트리에 먼저 등록. 미등록 리소스 발견 시 enforce 스크립트가 삭제.",
-		"principle": "등록 → 승인 → 생성. 미등록 = BLOCK.",
-		"registries": {
-			"root_dirs": "F12 allowed_root_dirs (이 파일)",
-			"root_files": "F13 allowed_root_files (이 파일)",
-			"packages": "pnpm-workspace.yaml packages 목록 (있는 경우)",
-			"docs": "AGENTS.md 정규 디자인 문서 표 + docs/project-structure.md Doc Registry"
-		},
-		"enforcement_script": "scripts/enforce-root-structure.sh",
-		"enforcement_mode": "delete_on_fix — --fix 플래그 시 미등록 리소스 삭제"
-	},
-	"F12": {
-		"id": "F12",
-		"rule": "root_directory_whitelist",
-		"description": "루트 디렉토리는 이 목록만 허용. 새 디렉토리 생성 전 목록에 먼저 추가 (사용자 승인 후).",
-		"allowed_root_dirs": [
-			".agents",
-			".claude",
-			".codex",
-			".github",
-			".users",
-			"READMES",
-			"about-docs",
-			"benchmark",
-			"bin",
-			"data-private",
-			"docs",
-			"examples",
-			"node_modules",
-			"packages",
-			"quarantine",
-			"scripts",
-			"src"
-		],
-		"note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | data-private = T3 보안(키/시크릿/개인정보) — 디렉터리는 허용하되 내용은 .gitignore (절대 추적 금지) | about-docs = 이 표준 repo 자체에 대한 메타 문서(설명·검증·실험). payload 아님 — project-create/migration 이 복제 제외 | quarantine = 보류 격리(처분 6번째). 방치 의심 자산 백업. 실물은 gitignore, MANIFEST.json/README.md 만 추적. scripts/quarantine.mjs 관리 — quarantine_policy 참조",
-		"violation_action": "BLOCK — enforce-root-structure.sh --fix 가 삭제",
-		"status": "ACTIVE"
-	},
-	"F13": {
-		"id": "F13",
-		"rule": "root_file_whitelist",
-		"description": "루트 파일은 이 목록만 허용. 새 파일 생성 전 목록에 먼저 추가 (사용자 승인 후).",
-		"allowed_root_files": [
-			"AGENTS.md",
-			"CLAUDE.md",
-			"GEMINI.md",
-			"OPENCODE.md",
-			"CODEX.md",
-			".gitignore",
-			".gitmodules",
-			"LICENSE",
-			"package.json",
-			"pnpm-workspace.yaml",
-			"pnpm-lock.yaml",
-			"tsconfig.json",
-			"tsconfig.base.json",
-			"README.md",
-			"README.template.md",
-			"CHANGELOG.md",
-			"review-pass.yaml"
-		],
-		"note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | README.md = 이 repo 소개(복제 제외) / README.template.md = 새 프로젝트가 받는 skeleton(create·migration 이 README.md 로 사용) | review-pass.yaml = 크로스리뷰 리뷰어 패널 project-local override (정본 SoT = naia-settings/review.json)",
-		"violation_action": "BLOCK — enforce-root-structure.sh --fix 가 삭제",
-		"status": "ACTIVE"
-	},
-	"quarantine_policy": {
-		"description": "보류 격리(처분 6번째 방식). 마이그레이션(harden) 중 만난 방치 의심 자산(빌드 미연결 + 한두 커밋 뒤 방치된 스캐폴드/잔재이나 지금 지우기도 애매한 회색 자산)을 즉시 삭제/유지 강요 대신 quarantine/ 로 보류하고 정책 기록 후 사용자 처분.",
-		"manager": "scripts/quarantine.mjs (add|check|list|restore|extend|purge)",
-		"manifest": "quarantine/MANIFEST.json (force-추적 — 컨텍스트가 '백업 자산이 있었다'를 항상 인지)",
-		"storage": "quarantine/ 실물 = gitignore(추적 제외) | git rm --cached 로 격리 = 이력 보존 | purge 후에도 git history 잔존",
-		"default_retention_months": 3,
-		"compress_on_expiry": true,
-		"lifecycle": "active → (cron check 가 review_by 경과 검출) → 자동 tar.gz 압축(비파괴) → archived + pending_notice → (SessionStart hook quarantine-notice.js 가 첫 세션에 surface) → 권한 유저 질의 → purge(삭제)/extend(연장)/restore(복원)",
-		"invariants": [
-			"백그라운드(cron/verify-watch)는 검출·압축·보고만 — 자동 삭제 절대 금지 (보존 우선 directive 정합)",
-			"파괴(삭제 purge)는 사용자가 의도적으로 호출할 때만 — 첫 세션 진입 시 권한 유저가 결정",
-			"만료 자동 처리 = 압축까지만 (디스크 절약, 비파괴)"
-		],
-		"status": "ACTIVE"
-	},
-	"required_process_gate": {
-		"description": "모든 신규 기능/수정 작업은 이 순서를 반드시 따른다. 순서를 건너뛰면 코드 작성 금지.",
-		"process_status_file": ".agents/context/process-status.json (repository-wide release state only)",
-		"session_contract_dir": ".agents/session-contracts/ (per-session goal, scope, audience, ownership, and mutation authority)",
-		"update_rule": {
-			"session_start": "현재 session_id의 명시적 session contract 결박 확인; shared current_work는 읽기 전용",
-			"session_end": "세션 progress 증거 갱신; 저장소 전체 release 상태가 바뀐 경우에만 process-status 동기화"
-		},
-		"permission_model_first": {
-			"_source": "harness-books Book1 부록 A.9(#1 권한>능력) + Book2 8.5(최소 권한 모델 = 빌드 1순위, '실패의 순서로 빌드'). 흡수 검토 = alpha-adk .agents/progress/harness-books-integration-findings-2026-06-18.md B절(gap 3).",
-			"principle": "능력(P01~P05 기능 인도)보다 권한을 먼저 세운다. 신규 레포 부트스트랩의 0번째 단계(P00)로 최소 권한 모델(고위험 행동 deny/ask 목록)을 먼저 확정한다.",
-			"already_enforced_as_invariants": [
-				"charter_immutability — 헌장 파일 단독 수정 금지 (F01)",
-				"resource_registry + F12/F13 — 루트 디렉토리/파일 화이트리스트, 미등록=BLOCK",
-				"F-SEC01 — 추적 경로 시크릿/개인정보 금지"
-			],
-			"ask_category": "위 already_enforced_as_invariants는 deny/BLOCK 계열(상시-on). ask 계열(승인 필요 고위험 행동)은 charter_immutability(헌장 수정 시 사용자 승인) + forbidden_actions의 승인 요구로 커버. 신규 레포는 자기 도메인의 고위험 ask 행동(배포·외부 발송·과금 등)을 추가 정의한다.",
-			"bootstrap_gate": "deny 계열(F01/F12/F13/F-SEC01)과 ask 계열(위 ask_category)이 신규 레포 day-0부터 정의·ACTIVE인지 확인한 뒤에 P01(기능 인도)을 시작한다. 권한 모델(deny+ask)이 비어 있으면 기능 작업 금지."
-		},
-		"steps": [
-			{
-				"id": "P01",
-				"name": "user_scenarios",
-				"description": "docs/progress/02.user-scenarios/INDEX.md에 해당 UC를 추가/업데이트. 누가, 무엇을, 왜 하는지.",
-				"deliverable": "docs/progress/02.user-scenarios/INDEX.md UC 항목",
-				"gate": "UC 항목 없으면 다음 단계 금지"
-			},
-			{
-				"id": "P02",
-				"name": "test_scenarios",
-				"description": "UC에 대응하는 시나리오 테스트(TEST-S)를 docs/progress/03.uc-tests/INDEX.md에 매핑.",
-				"deliverable": "docs/progress/03.uc-tests/INDEX.md TEST-S 항목",
-				"gate": "테스트 파일명/그룹명 명시 없으면 다음 단계 금지"
-			},
-			{
-				"id": "P03",
-				"name": "requirements",
-				"description": "docs/progress/01.requirements/INDEX.md에 FR/NFR 항목 추가/업데이트 (상태: Draft).",
-				"deliverable": "docs/progress/01.requirements/INDEX.md FR/NFR 항목",
-				"gate": "요구사항 항목 없으면 코드 작성 금지"
-			},
-			{
-				"id": "P04",
-				"name": "integration_test",
-				"description": "통합 테스트 파일 생성 또는 검증 스크립트 결과 첨부.",
-				"deliverable": "테스트 파일 경로 또는 검증 결과",
-				"gate": "테스트 없으면 PR 머지 금지"
-			},
-			{
-				"id": "P05",
-				"name": "requirements_complete",
-				"description": "작업 완료 후 요구사항 상태를 Done으로 갱신하고, 세 문서 독자층의 영향을 판정한 이슈별 receipt를 작성.",
-				"deliverable": "docs/progress/01.requirements/INDEX.md 상태 Done + docs/progress/99.dev-comm/issue-*-documentation-impact.json",
-				"gate": "커밋 전 요구사항 상태와 documentation impact receipt 검증 필수"
-			}
-		]
-	},
-	"mandatory_reads": {
-		"description": "모든 세션 시작 시 순서대로 읽어야 하는 파일.",
-		"files": [
-			{
-				"order": 1,
-				"path": ".agents/context/agents-rules.json",
-				"reason": "규칙 SoT. 금지/필수 규칙 전체."
-			},
-			{
-				"order": 2,
-				"path": ".agents/context/project-index.yaml",
-				"reason": "컨텍스트, 세션 계약, 설계 문서 위치 색인."
-			},
-			{
-				"order": 3,
-				"path": "docs/project-structure.md",
-				"reason": "허용된 루트 구조 명세."
-			}
-		]
-	},
-	"forbidden_actions": [
-		{
-			"id": "F01",
-			"rule": "charter_modification_without_approval",
-			"description": "헌장 파일 수정 시 사용자 명시 승인 없으면 BLOCK.",
-			"status": "ACTIVE"
-		},
-		{
-			"id": "F02",
-			"rule": "unregistered_root_dir_creation",
-			"description": "F12 allowed_root_dirs에 없는 루트 디렉토리 생성 금지.",
-			"status": "ACTIVE"
-		},
-		{
-			"id": "F03",
-			"rule": "unregistered_root_file_creation",
-			"description": "F13 allowed_root_files에 없는 루트 파일 생성 금지.",
-			"status": "ACTIVE"
-		},
-		{
-			"id": "F04",
-			"rule": "process_gate_skip",
-			"description": "P01~P05 순서 건너뛰고 코드 작성 금지.",
-			"status": "ACTIVE"
-		},
-		{
-			"id": "F05",
-			"rule": "session_contract_missing_or_ambiguous",
-			"description": "읽기 전용 조사 외 변경은 명시적 BOUND 세션 계약 없이 금지. shared process-status/current_work 결박 금지.",
-			"status": "ACTIVE"
-		},
-		{
-			"id": "F-SEC01",
-			"rule": "no_secrets_in_tracked_paths",
-			"description": "키·토큰·시크릿·개인정보(음성/얼굴 등)는 git 추적 경로에 두지 않는다. data-private/ (gitignored) 또는 외부 시크릿 매니저에만. 추적 발견 시 git rm --cached + (push됐으면) history purge.",
-			"violation_action": "BLOCK — security.test.mjs 가 추적 경로의 시크릿/개인정보 패턴 검출 시 실패",
-			"status": "ACTIVE"
-		}
-	],
-	"self_trust_config": {
-		"description": "self-trust 게이트(M2 SDLC / M4 완료증거 / M3 구조) 공통 설정. hook과 CI 스크립트가 하드코딩 대신 여기서 읽는다. 언어·경로·파일명 비종속을 위해 외부화. 프로젝트는 이 값을 자기 스택에 맞게 오버라이드한다.",
-		"enforcement_level": "enforced",
-		"_enforcement_levels": "off=검사안함 | advisory=경고만(차단 안함) | enforced=차단",
-		"completion": {
-			"_comment": "완료선언 탐지. 다국어. ASCII는 단어경계, CJK/한글은 부분일치. negations에 걸리면 완료선언 아님으로 간주.",
-			"keywords": [
-				"완료",
-				"통과",
-				"끝남",
-				"해결함",
-				"done",
-				"complete",
-				"completed",
-				"finished",
-				"shipped",
-				"resolved",
-				"fixed",
-				"CLEAN",
-				"all pass",
-				"all passed",
-				"green",
-				"完了",
-				"完成"
-			],
-			"negations": [
-				"미완료",
-				"안 됨",
-				"아직",
-				"not done",
-				"unfinished",
-				"incomplete",
-				"未完",
-				"WIP",
-				"wip"
-			],
-			"evidence_patterns": [
-				"Verified:",
-				"Evidence:",
-				"artifact:",
-				"sha256",
-				"coverage",
-				"closes #",
-				"resolves #",
-				"fixes #"
-			],
-			"_strong_evidence_comment": "강한 증거 = 재실행 가능한 검증 인용(review-pass 리포트 경로 / acceptance check 명령). 키워드(evidence_patterns)는 위조 가능 → 약한 증거로 advisory 경고. docs/acceptance-criteria.md 참조.",
-			"strong_evidence_patterns": [
-				"review-pass:",
-				"review-log",
-				".agents/reviews/",
-				"acceptance:",
-				"VERDICT=",
-				"CONFIRMED-resolved"
-			]
-		},
-		"change_set_rules": [
-			{
-				"id": "production-source",
-				"description": "프로덕션 소스 변경 시 시나리오+요구사항 산출물 필요. 프로젝트는 when_changed_glob를 자기 소스 경로로 바꾼다(예: Python은 src/**/*.py, Rust는 crates/**).",
-				"when_changed_glob": [
-					"src/main/**"
-				],
-				"requires": [
-					"docs/progress/02.user-scenarios/INDEX.md",
-					"docs/progress/01.requirements/INDEX.md"
-				],
-				"exempt_glob": [
-					"**/*.test.*",
-					"**/test/**",
-					"docs/**",
-					"**/*.md"
-				]
-			}
-		],
-		"documentation_impact_gate": {
-			"description": "프로덕션 변경은 저장소 문서, 사용자 사용법, 재사용 가능한 학습 자료의 영향을 모두 UPDATED 또는 근거 있는 N/A로 판정한다.",
-			"enabled": true,
-			"when_changed_glob": [
-				"src/main/**"
-			],
-			"exempt_glob": [
-				"**/*.test.*",
-				"**/test/**"
-			],
-			"receipt_glob": "docs/progress/99.dev-comm/issue-*-documentation-impact.json",
-			"required_targets": [
-				"repository_docs",
-				"user_manual",
-				"reusable_learning"
-			],
-			"target_evidence_glob": {
-				"repository_docs": [
-					"README.md",
-					"docs/**"
-				],
-				"user_manual": [
-					"docs/manual/**",
-					".users/**",
-					"READMES/**"
-				],
-				"reusable_learning": [
-					"AGENTS.md",
-					"docs/lessons/**",
-					"docs/book/**",
-					"about-docs/**"
-				]
-			},
-			"na_rationale_min_chars": 30,
-			"na_rationale_placeholder_phrases": [
-				"not relevant",
-				"not applicable",
-				"no impact",
-				"none",
-				"n/a",
-				"관련 없음",
-				"해당 없음",
-				"없음"
-			]
-		},
-		"artifact_min_meaningful_chars": 100,
-		"terminology": {
-			"_comment": "용어 게이트. 프로젝트 약어는 glossary에 정의하거나 풀어쓴다(불친절한 약자 금지). 일반 상식 약어만 whitelist. forbidden_terms = 금지 신조어/자체용어 블랙리스트(프로젝트가 채움).",
-			"glossary_file": "docs/glossary.md",
-			"acronym_min_len": 3,
-			"acronym_whitelist": [
-				"API",
-				"URL",
-				"JSON",
-				"YAML",
-				"HTTP",
-				"HTML",
-				"CSS",
-				"SDK",
-				"CLI",
-				"NFC",
-				"PDF",
-				"CSV",
-				"SQL"
-			],
-			"forbidden_terms": []
-		}
-	}
+  "_copyright": "Copyright 2026 Nextain Inc. All rights reserved.",
+  "project_identity": {
+    "name": "Naia ADK",
+    "nature": "Workspace scaffold + governance baseline for AI-assisted work (public, Apache 2.0)",
+    "philosophy": "Tool-agnostic workspace format; interfaces over runtime coupling; minimum solo governance baseline",
+    "org": "nextain",
+    "repo": "nextain/naia-template-project"
+  },
+  "context_boundaries": {
+    "shared_entrypoints_are_indexes": "AGENTS.md is the canonical repository index and CLAUDE.md/GEMINI.md/OPENCODE.md/CODEX.md are byte-identical mirrors. Shared entrypoints may contain identity, mandatory index paths, context routing, session-contract locations, and permanent safety boundaries only; never current goals, issue state, implementation plans, completion claims, or artifact wording.",
+    "recovery_mode": "If .codex/no-harness, .claude/no-harness, or .pi/no-harness exists at the repository root, the harness and session-contract mutation requirements are disabled. Work normally under host permissions and repository safety rules; do not create or bind a session contract.",
+    "session_contract_authority": "Outside recovery mode, an UNBOUND session may perform ordinary reversible file creation and editing inside its resolved project boundary. A BOUND contract is required for governance or host-policy files, shared entrypoints, deletion, mutating shell commands, external effects, and any operation that can expand the session's own authority. When bound, the local registry pointer, active contract digest, explicit session_bindings entry, and progress contract reference must all agree. Progress or Markdown session_id fields never grant authority.",
+    "project_isolation": "Never infer a session binding from a parent workspace, child project, or the repository's only unfinished work unit. Concurrent contracts must declare non-overlapping target_ownership paths.",
+    "context_is_not_output": "Background, reference, example, conversation, and internal context constrain reasoning but are not code, UI, or external-document content. Rendering requires explicit atom-level derive, quote, or require authority for a declared output unit and audience.",
+    "source_atom_contract": "Every v2 source atom declares subject, effect, and render_policy. Non-directive source classifications keep directive_ids exactly empty; rendering authority never becomes objective authority.",
+    "output_unit_contract": "Every verifiable v2 output unit declares kind, audience, exposure, objective_atom_ids, and content_source_atom_ids. Agent-workflow background/precondition atoms cannot be shipping content edges.",
+    "legacy_read_only": ".agents/context/process-status.json current_work and progress session_id fields are retained for migration evidence only and never grant mutation authority."
+  },
+  "local_projects": {
+    "naia-os": {
+      "purpose": "Naia OS desktop app (Tauri 2 + React + Three.js + Node.js agent)",
+      "repo": "nextain/naia-os",
+      "visibility": "public",
+      "entry_point": "naia-os/AGENTS.md"
+    },
+    "issue-desk": {
+      "purpose": "IssueDesk — standalone Vite+React panel for naia-os. GitHub issue/PR triage, community assistant, notification triage.",
+      "repo": "nextain/issue-desk",
+      "visibility": "private",
+      "entry_point": "issue-desk/panel.json",
+      "notes": "Standalone git repo, not a submodule. Design doc: naia-os/docs/design/issue-desk.ko.md"
+    },
+    "about.nextain.io": {
+      "purpose": "Nextain corporate website (Next.js 14 + next-intl)",
+      "repo": "nextain/about.nextain.io",
+      "visibility": "public",
+      "entry_point": "about.nextain.io/README.md"
+    },
+    "naia.nextain.io": {
+      "purpose": "Naia web app / Lab portal (Next.js + BFF for gateway)",
+      "repo": "nextain/naia.nextain.io",
+      "visibility": "private",
+      "entry_point": "naia.nextain.io/AGENTS.md"
+    },
+    "aiedu.nextain.io": {
+      "purpose": "AI education platform — curriculum-driven AI teacher (Next.js + Monaco + Pyodide + any-llm)",
+      "repo": "nextain/aiedu.nextain.io",
+      "visibility": "private",
+      "entry_point": "aiedu.nextain.io/AGENTS.md",
+      "notes": "B2B commercial product. Dual-mirror context. Curriculum as plugin. Depends on any-llm B2B extension."
+    },
+    "admin.nextain.io": {
+      "purpose": "Nextain B2B admin control plane (license key mgmt, token tracking, client mgmt)",
+      "repo": "nextain/admin.nextain.io",
+      "visibility": "private",
+      "entry_point": "admin.nextain.io/AGENTS.md",
+      "notes": "Internal tool. Manages aiedu.nextain.io and future B2B products."
+    }
+  },
+  "infrastructure": {
+    "gateway": {
+      "prod": {
+        "url_env": "GATEWAY_URL — prod gateway base URL, injected per-fork; never committed",
+        "key_env": "GATEWAY_MASTER_KEY",
+        "db": "any-llm gateway DB (Cloud SQL PostgreSQL, region per-fork)"
+      },
+      "dev": {
+        "url_env": "DEV_GATEWAY_URL — dev gateway base URL, injected via .env.local; never committed",
+        "key": "<DEV_GATEWAY_KEY — .env.local 에서 주입, 레포 커밋 금지>",
+        "db": "any-llm gateway dev DB (same instance, separate DB)",
+        "min_instances": 0
+      },
+      "env_rule": ".env.local → dev gateway. .env.production.local → prod gateway. NEVER write prod credentials to .env.local.",
+      "guard_hook": ".claude/hooks/prod-gateway-guard.js — blocks prod credentials in .env.local at Edit|Write time",
+      "sync_script": "project-any-llm/scripts/sync-prod-to-dev.sh — manual only, requires 'yes' confirmation, OVERWRITES all dev data"
+    },
+    "ci_runners": {
+      "self_hosted": {
+        "name": "luke-bazzite",
+        "host": "this Bazzite PC (/opt/actions-runner)",
+        "scope": "nextain org — private repos only (public repos use free GitHub-hosted runners)",
+        "labels": [
+          "self-hosted",
+          "linux",
+          "x64",
+          "bazzite"
+        ],
+        "service": "actions.runner.nextain.luke-bazzite.service",
+        "note": "DO NOT attach self-hosted runners to public repos — fork PR security risk",
+        "install_note": "/var/home causes SELinux exec block; always install under /opt/"
+      },
+      "workflow_usage": "runs-on: [self-hosted, linux, x64]"
+    }
+  },
+  "submodules": {
+    "docs-work-logs": {
+      "purpose": "Developer work logs (per-person folders)",
+      "repo": "nextain/docs-work-logs",
+      "visibility": "private",
+      "entry_point": "docs-work-logs/AGENTS.md"
+    },
+    "docs-nextain": {
+      "purpose": "Internal docs (onboarding, meetings, design)",
+      "repo": "nextain/docs-nextain",
+      "visibility": "private",
+      "entry_point": "docs-nextain/AGENTS.md"
+    },
+    "docs-business": {
+      "purpose": "Business docs (proposals, strategy, IR)",
+      "repo": "nextain/docs-business",
+      "visibility": "private",
+      "entry_point": "docs-business/README.md"
+    },
+    "example.com": {
+      "purpose": "Cafelua personal website",
+      "repo": "luke-n-alpha/example-project-private",
+      "visibility": "private",
+      "entry_point": "example.com/README.md"
+    },
+    "project-any-llm": {
+      "purpose": "Any-LLM SDK + FastAPI gateway (LLM proxy, credits, auth, usage tracking)",
+      "repo": "nextain/any-llm",
+      "visibility": "public",
+      "entry_point": "project-any-llm/README.md"
+    }
+  },
+  "reference_submodules": {
+    "_description": "Reference repos for upstream tracking (read-only, periodic sync)",
+    "ref-cline": {
+      "purpose": "Cline upstream reference (VS Code AI extension)",
+      "source": "https://github.com/cline/cline",
+      "usage": "Architecture/pattern reference"
+    },
+    "ref-opencode": {
+      "purpose": "OpenCode reference (TUI-based AI coding agent)",
+      "source": "https://github.com/anomalyco/opencode",
+      "usage": "Architecture/pattern reference for CLI features"
+    },
+    "ref-nanoclaw": {
+      "purpose": "NanoClaw reference (lightweight AI agent framework)",
+      "source": "https://github.com/qwibitai/nanoclaw",
+      "usage": "Agent framework reference"
+    },
+    "ref-moltbot": {
+      "purpose": "Moltbot reference",
+      "source": "https://github.com/moltbot/moltbot",
+      "usage": "Bot framework reference"
+    },
+    "ref-project-airi": {
+      "purpose": "AIRI reference (AI character project)",
+      "source": "https://github.com/moeru-ai/airi",
+      "usage": "AI character/avatar reference"
+    },
+    "ref-jikime-adk": {
+      "purpose": "Jikime ADK reference (Agent Development Kit)",
+      "source": "https://github.com/jikime/jikime-adk",
+      "usage": "Agent development reference"
+    },
+    "ref-jikime-mem": {
+      "purpose": "Jikime Memory reference",
+      "source": "https://github.com/jikime/jikime-mem",
+      "usage": "Memory/RAG reference"
+    }
+  },
+  "architecture_rules": {
+    "modification_levels": {
+      "L1_independent": "docs-work-logs (personal folders)",
+      "L2_conditional": "docs-nextain, docs-business, example.com, project-any-llm"
+    }
+  },
+  "skills": {
+    "read-doc": {
+      "trigger": "MANDATORY — any time a file with extension .hwp, .hwpx, .pdf, .docx, .xlsx, .pptx needs to be read or analyzed",
+      "command": "/read-doc <file-path>",
+      "rule": "NEVER say 'I cannot read this file type'. Always use /read-doc first. The skill handles all extraction automatically.",
+      "sidecar_note": "docs-business HWP/HWPX files have pre-extracted .txt sidecars — /read-doc checks these first automatically",
+      "use_cases": [
+        "docs-business 제안서/사업계획서 분석",
+        "발표 자료(PPTX) 내용 파악",
+        "이력서(DOCX) 검토",
+        "정부과제 제출서류 검토"
+      ]
+    },
+    "webapp-testing": {
+      "trigger": "MANDATORY — any E2E test, UI behavior verification, screenshot capture, or console log check for local web apps (naia.nextain.io, about.nextain.io, aiedu.nextain.io, etc.)",
+      "command": "/webapp-testing",
+      "rule": "NEVER ask the user to manually test. Always use this skill to verify directly. Uses Playwright Python scripts.",
+      "use_cases": [
+        "Next.js 앱 E2E 테스트",
+        "UI 동작 검증 (버튼 클릭, 폼 제출 등)",
+        "스크린샷 캡처",
+        "콘솔 로그/에러 확인"
+      ]
+    },
+    "doc-coauthoring": {
+      "trigger": "MANDATORY — any request to write a structured document: tech spec, proposal, RFC, design doc, PRD, decision record",
+      "command": "/doc-coauthoring",
+      "rule": "Invoke before writing the document. 3-stage workflow: context collection → structured writing → reader test.",
+      "use_cases": [
+        "기술 스펙 작성",
+        "제안서/IR 문서",
+        "RFC / 설계 결정 기록",
+        "GitHub Issue 기반 기능 설계 스펙"
+      ]
+    }
+  },
+  "ai_workflow": {
+    "knowledge_principle": "AI knowledge = Developer knowledge (1:1 parity)",
+    "default_workflow": "issue-driven-development.yaml (feature-level work)",
+    "lightweight_workflow": "development-cycle.yaml (non-feature changes: typos, config values, simple directives)",
+    "documentation_impact_policy": {
+      "purpose": "A production change is not complete until its impact on all three documentation audiences is decided and evidenced.",
+      "targets": {
+        "repository_docs": "Repository-facing behavior, contracts, architecture, verification, and contributor guidance.",
+        "user_manual": "User-facing setup, operation, discovery, privacy, and known limitations.",
+        "reusable_learning": "Evidence-backed principles or case studies reusable beyond the changed product."
+      },
+      "allowed_statuses": [
+        "UPDATED",
+        "N/A"
+      ],
+      "updated_evidence": "List changed local files or immutable external commit URLs.",
+      "na_evidence": "Give a concrete applicability rationale; bare 'not relevant' is invalid.",
+      "applicability": {
+        "full_review": "User behavior, public API or wire contract, permissions, privacy, safety, availability, or cross-repository schema changes.",
+        "existing_contract_fix": "A regression fix may mark new scenario/requirement documents N/A only when it links the existing IDs and adds regression evidence.",
+        "behavior_preserving": "Refactor, test-only, generated, formatting, comment, or lockfile-only changes may use N/A with a concrete reason.",
+        "reusable_learning_threshold": "Update only when the lesson is reusable, non-duplicative, backed by an immutable source, and states its validation limits."
+      },
+      "receipt": "Use one tracked, per-issue JSON receipt. New or migrated template-based projects define its path and enforce it in local hooks and CI; existing projects require an explicit project migration before claiming machine enforcement.",
+      "completion_rule": "The receipt is finalized during Sync, checked again during Sync Verify, included in Report, and required before Commit."
+    },
+    "permission_model": {
+      "code_files": "AI = implementer. Can read, modify, create, delete freely.",
+      "design_docs": "AI = reviewer by default. It may modify a design document without asking again when the user's current bounded request explicitly asks to create, update, or record that document and does not leave a material design choice unresolved. Otherwise only typo/grammar, internal contradiction, or broken link/reference corrections are autonomous.",
+      "design_doc_paths": [
+        "docs/design/",
+        "design/",
+        "spec/"
+      ],
+      "design_doc_extensions": [
+        ".md",
+        ".txt",
+        ".yaml",
+        ".json"
+      ],
+      "note": "Any file matching these path prefixes + extensions is treated as a design doc. Hook enforces this at Edit|Write time.",
+      "bounded_recording_exception": "An explicit request to write or update the design record is already authority for that bounded recording work; the agent may activate the temporary design-doc edit marker, perform the requested edit, and close the marker without another approval prompt.",
+      "material_decision_boundary": "Ask when the edit would choose or change a product, architecture, interface, policy, destructive disposition, or scope decision not determined by the request. Never silently rewrite design to match implementation.",
+      "key_distinction": "Code review clean pass = no code issues. Design doc review clean pass = no NEW findings (typos/contradictions/broken links). Never: 'design should match implementation'."
+    },
+    "routine_execution_authority": {
+      "principle": "Once the user authorizes an objective and scope, carry out normal in-scope execution without recurring approval prompts.",
+      "routine_steps": [
+        "Read-only inspection, local investigation, and evidence collection",
+        "In-scope implementation, dependency installation, formatting, tests, builds, and local servers",
+        "Non-destructive Git fetch, pull, merge, worktree creation, stage, commit, and non-force non-deleting push",
+        "Delegation to subagents for bounded roles already inside the authorized objective"
+      ],
+      "delegation_inheritance": "Every subagent, delegated agent, and nested delegate inherits the same authorized objective, scope, routine-step authority, and exception boundary. A delegate must not ask again for a routine step merely because execution moved to another agent or session.",
+      "ask_only_for": [
+        "Irreversible deletion or destructive history rewriting, including remote-ref deletion and force push",
+        "Unrelated-histories or otherwise exceptional forced integration",
+        "External messages, publication outside the authorized repository workflow, payments, or purchases",
+        "Production deployment, destructive production or shared-database mutation, credentials disclosure, or material cloud cost",
+        "A missing user choice that would materially expand or change the authorized objective or scope"
+      ],
+      "clarification_rule": "Do not turn workflow checkpoints, tool permissions, session boundaries, or delegation boundaries into repeated conversational approval gates. Keep product and scope decision gates when the answer can materially change the result; otherwise proceed and report evidence."
+    },
+    "escalation_path": {
+      "design_gap_found_during_build": [
+        "1. Do NOT modify the design doc to match implementation",
+        "2. Do NOT silently adapt implementation to paper over the gap",
+        "3. Surface to user: state the gap (design says X, implementation does Y), present options (A: update design, B: fix implementation, C: accept as intentional deviation)",
+        "4. Wait for user decision before proceeding"
+      ],
+      "design_flaw_found_during_review": [
+        "1. Report to user: 'Found potential design issue at [file:line]: [description]'",
+        "2. Propose: 'Options: A) fix typo/grammar (allowed), B) this is a design decision I should not change — your call'",
+        "3. Do not make the change until user confirms it's (A)"
+      ]
+    },
+    "mandatory_pre_checks": [
+      "Read agents-rules.json first",
+      "When working in submodule, read its entry point file",
+      "For feature-level work: follow issue-driven-development.yaml material-decision checkpoints (understand → scope → plan); an explicit bounded request proceeds without repeated confirmation, while an unresolved choice that materially changes the result must be asked",
+      "Apply minimal-change principles",
+      "For any .hwp/.hwpx/.pdf/.docx/.xlsx/.pptx file: use /read-doc skill FIRST — never claim inability to read documents",
+      "Design docs (docs/design/, spec/, design/) + extensions (.md/.txt/.yaml/.json): see permission_model above. Hook fires on edits — surface reason to user first.",
+      "Before running destructive git commands (git checkout --, git reset --hard, git clean -f): ALWAYS ask user for explicit confirmation first. State exactly what will be deleted. No exceptions.",
+      "Before a material, irreversible, ambiguous, or out-of-scope deletion: understand the exact target and impact, preserve a recovery path where practical, and get user confirmation. Agent-owned temporary/work artifact cleanup and a user-requested bounded recoverable deletion may proceed without repeated approval after exact-target verification. (see dead_code_safety)"
+    ],
+    "completeness_principle": {
+      "statement": "AI marginal cost ≈ 0 — when approved to build something, build it completely (all edge cases, error handling, tests included).",
+      "three_principles_distinction": {
+        "no_autonomous_development": "WHAT to build = user decides. Never add features or scope without asking.",
+        "minimal_modification": "HOW FAR to deviate from upstream = minimize. For fork-based work: overlay custom changes with minimal delta from upstream.",
+        "completeness": "QUALITY of approved work = complete. If user approves X, implement X fully. Option A (complete) vs Option B (partial) → always recommend A unless user explicitly asks for partial."
+      },
+      "boilable_lake_rule": "A bounded, scoped module is 'boilable'. If scope is finite, implement it completely. Never deliver partial when complete costs AI nothing extra."
+    },
+    "dead_code_safety": {
+      "statement": "Dead/unused code, branches, files, and artifacts are NOT harmless. The AI's assumption that 'this seems unused, so removing/ignoring it is safe' is frequently wrong: deletion is irreversible, and orphaned dead code misleads the next session into treating it as normal. Default to RISK-assumption, not harmlessness.",
+      "rules": [
+        "Do not casually delete OR ignore dead/unused code, branches, or files.",
+        "Before material, irreversible, ambiguous, or out-of-scope deletion: (1) understand WHY it is dead (2) resolve the exact target and impact (3) preserve a recovery path where practical (4) get explicit user confirmation.",
+        "Agent-owned temporary/work artifacts with an explicit lifecycle may be cleaned up after exact-target verification without another prompt.",
+        "A user-requested bounded recoverable deletion is already authorized; verify the exact target stays inside scope, then execute without repeated approval."
+      ],
+      "rationale": "Known AI cognitive bias: underweighting the risk of dead code. Same root cause as the 'recurring-symptom misclassification' failure pattern (treating a re-appearing issue as a new, separate one)."
+    },
+    "ask_user_question_format": {
+      "description": "Standard structure for user-facing decision questions (gates, options, scope choices). Makes trade-offs explicit.",
+      "structure": [
+        "1. Re-ground (1-2 sentences): state the project, current phase, and specific question in plain terms",
+        "2. Simplify: ask without jargon — as if explaining to a non-engineer",
+        "3. Recommend: explicit recommendation with completeness score (1-10) + AI time + human review time",
+        "4. Options: lettered A/B/C, each with effort estimate + completeness score + one-sentence trade-off"
+      ],
+      "example": "RECOMMENDATION: A (completeness 9/10 | AI: ~30min | review: ~10min)\nA) Full implementation — all edge cases covered [completeness 9/10]\nB) Minimal — ships faster, revisit later [completeness 5/10]"
+    },
+    "review_skill": "Use '/review-pass stage=planning|development|test|integration files=...' for stage-specific multi-AI cross-validation review. REQ-IDs required for feature-level work. Simple changes (lightweight cycle: <3 files, single module) skip REQ-ID creation. Read .agents/requirements/_index.yaml when entering Plan or Review phases.",
+    "requirements_management": {
+      "storage": ".agents/requirements/",
+      "index": ".agents/requirements/_index.yaml",
+      "load_timing": "on-demand when entering Plan or Review phases (NOT session-injected)",
+      "req_id_threshold": "Feature-level work only. Lightweight cycle changes (typos, config, <3 files, single module) skip REQ-ID creation.",
+      "source_authority": {
+        "candidate": "Code is source of truth. Requirements are descriptive (derived from existing code).",
+        "human": "Requirements are normative. Code must conform.",
+        "default": "When requirements conflict with code: candidate→code wins, human→REQ wins."
+      },
+      "retrofitted_requirements": "Always status: candidate. Require explicit human promotion to active/verified.",
+      "dual_mirror": "Requirements live in .agents/requirements/ ONLY (no .users/ mirror). Use title_ko field for Korean title.",
+      "trace_format": "Use file + symbol references. Never hardcode line numbers (they rot immediately)."
+    },
+    "submodule_rule": "Each submodule has own rules. Read entry_point before modifications."
+  },
+  "financial_integrity": {
+    "cost_estimation_first": "Before performing any large-scale cloud operations, the agent MUST estimate the potential cost and obtain explicit user approval.",
+    "expensive_operations_blacklist": [
+      "GCS: Data movement > 10GB or API ops > 1,000 via mount points (e.g., rsync via gcsfuse)",
+      "GCE: Provisioning high-tier GPU instances (A100, H100, etc.)",
+      "Vertex AI/LLM: Massive batch inference or fine-tuning jobs",
+      "Cloud SQL: Massive data migrations or large-scale index rebuilds"
+    ],
+    "resource_awareness": "Always monitor Class A/B API operation counts for GCS and egress traffic costs for GCE/Cloud Run."
+  },
+  "language_harness": {
+    "no_korean_in_agents": "Strictly prohibit Korean characters in .agents/ directory to optimize token usage. All context files here must be in concise English.",
+    "concise_session_output": "AI responses should be extremely brief (less than 3 lines) to minimize history weight. Avoid long Korean preambles."
+  },
+  "conventions": {
+    "response_language": "Korean (한국어로 응답)",
+    "development_approach": "Issue-driven development (default). TDD where applicable.",
+    "test_code_review": "After writing tests, never trust results blindly. Review test logic itself with iterative review (2 consecutive clean passes) before trusting outcomes. Signs of invalid tests: assertions that always pass, mocked internals that diverge from real behavior, missing negative cases.",
+    "tmp_files": {
+      "rule": "All temporary/debug/scratch scripts MUST be created inside tmp/ at the root of the active working directory. NEVER create tmp-* or tmp_* files in the repo root or subproject roots.",
+      "gitignore": "tmp/, tmp-*, tmp_* are gitignored at root. Files placed there are never tracked.",
+      "naming": "Use descriptive names inside tmp/ (e.g. tmp/check-db.php, tmp/debug-redis.sh) — no tmp- prefix needed since the directory provides the namespace."
+    },
+    "work_logs": "Don't modify unless explicitly requested",
+    "workfile_lifecycle": {
+      "principle": "All work files (progress reports, scratch scripts, temp data) MUST follow explicit lifecycle. No accumulation without policy.",
+      "directories": {
+        ".agents/context/": "Permanent context (on_demand loaded). Long-lived. In-place corrections only. Never delete.",
+        ".agents/progress/": "Active work reports + completed reports. JSON files = harness 1st-class (session-inject reads). MD reports = lifecycle-tracked.",
+        ".agents/progress/archive/YYYY-MM/": "Completed reports moved here (preserved + searchable). readdirSync skips subdirs = automatically excluded from session-inject/commit-guard active set.",
+        ".agents/work/": "Temporary work scripts. gitignored at root (.gitignore: .agents/work/). User-managed cleanup (no AI auto-delete).",
+        "tmp/, tmp-*, tmp_*": "Debug/scratch (see tmp_files above). gitignored."
+      },
+      "handoff_documents": {
+        "policy": "Local-only session or PC transfer artifacts. Never stage or commit them because stale handoff state can misdirect another machine or session.",
+        "cross_machine": "Cross-machine continuation uses a remote GitHub issue plus reachable branch or commit SHAs as the only handoff boundary. Record durable scope, invariants, current state, validation, and blockers there; never transfer local session IDs, registry pointers, session maps, runtime contracts, progress/handoff files, harness units, credentials, or host-local receipts through Git.",
+        "location": "Use .agents/work/, .agents/progress/, .agents/reviews/, tmp/, or a dedicated ignored .handoff/ or .handover/ directory. Topic-prefixed local notes such as project-handoff belong only in one of these ignored locations.",
+        "naming": "A global local-only artifact basename starts with handoff or handover. Topic-prefixed formal documents remain trackable outside ignored local-artifact directories.",
+        "boundary": "Durable handoff or handover guides and contracts under official docs/, spec/, design/, .agents/context/, or .agents/decisions/ directories remain trackable even when their basename starts with handoff or handover. Other durable project knowledge belongs in tracked context, requirements, decisions, or formal docs; do not disguise permanent documentation as a local handoff artifact."
+      },
+      "completion_criteria": "A work file is 'complete' when 2+ of: (a) related code committed/pushed to origin, (b) user explicitly declares done/closed, (c) cross-review GO + user acceptance, (d) superseded by next-step plan/issue. AI self-declaring 'complete' is prohibited.",
+      "triggers": {
+        "work_start": "Create or update one progress file (1 per work, not 1 per session).",
+        "session_end_or_milestone": "Add status line ('✅ done' / '⏳ in-progress' / '🔴 blocked').",
+        "after_commit_push": "Move that work's progress to .agents/progress/archive/YYYY-MM/ (selective — mention in commit message).",
+        "monthly_cleanup": "Review 30+ day progress files; archive completed or inline-resolve.",
+        "work_30d": ".agents/work/ 30+ day = user-decided deletion (volatile by design)."
+      },
+      "naming": "Existing convention: <topic>-YYYY-MM-DD.md OR <issue-slug>.json (naia-adk progress pattern). On archive: move only (no rename) to preserve cross-references.",
+      "archive_unit": "Archive MD/JSON pair together (same base name). If JSON has current_phase != close, set to close OR unbind before move — otherwise session-inject still treats it active.",
+      "inbound_references": "Default: allow link breakage on archive (archived = historical). On case-by-case need: leave 1-line stub at original path. No automatic archive index — over-engineering.",
+      "harness_scope_asymmetry": "session-inject collects cwd + IMMEDIATE child subdirs only. 2nd-level subs not scanned. commit-guard scans cwd only. Policy applies repo-wide as convention but ENFORCEMENT range is root + direct children. 2nd-level subs need own hooks for enforcement.",
+      "session_map_cleanup": "On archive: .agents/progress/.session-map.json entries pointing to archived files become stale. session-inject auto-prunes on next run, but explicit cleanup is cleaner."
+    },
+    "git_workflow": {
+      "maintainer_rule": "Luke is a maintainer of all Nextain repos. NEVER create PRs for Nextain repos — commit and push directly to main (or the relevant branch). PRs are for external contributors only.",
+      "pr_prohibition": "DO NOT run `gh pr create` for nextain/* repos. The pr-guard hook will block this automatically.",
+      "owned_repo_posting_authority": "When the user explicitly requests an issue, comment, release note, or other repository post in a Nextain or user-owned/managed repository, that request is posting authority and does not require a second approval. Unsolicited posts and third-party/community posts remain external actions requiring reviewed-content approval."
+    },
+    "external_repo_policy": {
+      "principle": "Information gathering first before action on third-party or community repositories; this policy does not add a second approval to an explicitly requested post in a Nextain or user-owned/managed repository",
+      "steps": [
+        "1. Read CONTRIBUTING.md / contributing guide of the external repo",
+        "2. Search existing issues and PRs to avoid duplicates",
+        "3. Study code patterns and conventions used in the repo",
+        "4. Prototype and validate internally before reaching out",
+        "5. Draft issue/PR content and show to user for review",
+        "6. Get explicit user approval before posting anything"
+      ],
+      "community_context_first": "Before engaging in any external community (repo, Discord, Slack, forum, etc.), gather context first: (1) communication tone — formal/casual, terse/verbose, (2) explicit rules — CoC, PR/issue templates, labeling conventions, (3) community tendencies — what they value, what they reject, how they respond to outsiders, who the influential members are, what past interactions look like",
+      "rule": "Never post unsolicited content or issues, PRs, or comments to third-party/community repositories without explicit user approval of the reviewed content. An explicitly requested post to a Nextain or user-owned/managed repository is already authorized.",
+      "tone_matching": "Technical issues and PRs are read by people. Write in a tone that fits the community's atmosphere — not just technically correct, but culturally appropriate. A dry RFC-style community expects concise technical prose; a friendly community expects warmth. Match the room.",
+      "ai_disclosure": "When posting AI-assisted content to external repos, always include a disclosure footer: state it was written with AI assistance AND provide a contact point for the developer in case of issues (e.g. '🤖 Written with AI assistance. If anything looks off, please ping @luke-n-alpha or open a discussion.'). Transparency and accountability both required. [HOOK-ENFORCED 2026-05-16: .claude/hooks/pr-guard.js — 외부 repo content op(gh issue/pr create·comment, pr review, release create) 시 disclosure footer(🤖/AI assistance) 미포함이면 차단(OSS-access 마커 소비 전). 내부 nextain/* 면제. merge/reopen/edit 등 비-content op 면제.]"
+    },
+    "contribution_fork_policy": {
+      "account": "Use nextain org (e.g. nextain/vllm) — this is an official Nextain-backed contribution, not a personal side project",
+      "naming": "Same name as upstream repo — no prefix",
+      "readme_required": "Every contribution fork MUST have a README clearly stating: (1) this is a contribution fork, not a hard fork, (2) upstream repo link, (3) what feature/fix is being contributed, (4) current status (in progress / PR submitted / merged), (5) contact: @luke-n-alpha",
+      "repo_description": "Set GitHub repo description to: 'Contribution fork — [feature] upstream PR in progress. See [upstream url]'",
+      "branch_strategy": {
+        "main": "fork main = upstream main + AGENTS.md (AI context, version controlled here)",
+        "feature": "feature branch = based on upstream main, code changes only — NEVER add AGENTS.md here",
+        "pr": "PR = feature branch → upstream. AGENTS.md is on main only, so it is automatically excluded from the PR diff"
+      },
+      "main_sync": "Keep main branch in sync with upstream at all times (rebase or merge upstream main regularly)",
+      "work_branch": "All work on feature branches only (e.g. feat/minicpm-audio-output)",
+      "lifecycle": "Archive or delete after upstream PR is merged"
+    }
+  },
+  "cascadeRules": {
+    "_description": "When context changes, propagate to related modules.",
+    "onSubmoduleAdd": {
+      "trigger": "New submodule added",
+      "propagateTo": [
+        "parent"
+      ],
+      "actions": [
+        "Add entry to parent/.gitmodules",
+        "Add entry to parent/.agents/context/agents-rules.json submodules",
+        "Update parent/CLAUDE.md submodule table",
+        "Add category to parent/.agents/context/ai-work-index.yaml (if needed)"
+      ]
+    },
+    "onSubmoduleRemove": {
+      "trigger": "Submodule removed",
+      "propagateTo": [
+        "parent"
+      ],
+      "actions": [
+        "Remove from parent/.gitmodules",
+        "Remove from parent/.agents/context/agents-rules.json submodules",
+        "Remove from parent/CLAUDE.md submodule table"
+      ]
+    },
+    "onRulesChange": {
+      "trigger": ".agents/context/agents-rules.json changed",
+      "propagateTo": [
+        "mirror"
+      ],
+      "actions": [
+        "Sync update .users/context/agents-rules.md (1:1 mirroring)"
+      ]
+    },
+    "onEntryPointChange": {
+      "trigger": "AGENTS.md, CLAUDE.md, GEMINI.md, OPENCODE.md, or CODEX.md changed",
+      "propagateTo": [
+        "self"
+      ],
+      "actions": [
+        "Treat AGENTS.md as the canonical source. When AGENTS.md changes, copy it to CLAUDE.md, GEMINI.md, OPENCODE.md, and CODEX.md. When a mirror changes, restore that mirror from AGENTS.md; a tool-specific mirror must never overwrite the canonical contract."
+      ]
+    },
+    "propagationOrder": {
+      "_description": "Propagation order (dependency order)",
+      "order": [
+        "1. self — complete own changes",
+        "2. parent — update parent context",
+        "3. siblings — update referencing sibling modules",
+        "4. children — update referencing child modules",
+        "5. mirror — sync .users/"
+      ]
+    }
+  },
+  "workflows": {
+    "instruction": "Read workflows on demand. Do not load all at once.",
+    "selection_guide": {
+      "reference": ".agents/context/ai-work-index.yaml",
+      "steps": [
+        "Extract keywords from the user request",
+        "Match the category in ai-work-index.yaml",
+        "Read the matching root quick reference first",
+        "Load the workflow document only if the task still needs details"
+      ]
+    },
+    "index": {
+      "submodule_init": "git submodule update --init --recursive",
+      "development_cycle": ".agents/workflows/development-cycle.yaml",
+      "issue_driven_development": ".agents/workflows/issue-driven-development.yaml"
+    }
+  },
+  "context_governance": {
+    "_source": "harness-books Book1 Appendix A.4 (L47-60), absorbed 2026-06-18",
+    "_brief": ".agents/progress/harness-books-integration-findings-2026-06-18.md (section A, gap 2)",
+    "_layer_note": "Runtime context budgeting ONLY. This is the session-window token axis, NOT the naia-memory product axis (long-term / real memory). Do not conflate them: naia-memory decides what to remember across sessions; this decides what to keep live in the current window.",
+    "token_budget_policy": {
+      "on_demand_loading": "Beyond the mandatory session-start reads, load only the project-index.yaml on_demand_loading section needed for the task; never bulk-load a full body context file (matches A.4: separate entrypoint vs body files to prevent index bloat).",
+      "reserve_for_compact": "Reserve compact output space before the window is full — never wait for overflow then handle it as an emergency.",
+      "restore_after_compact": "After compact, reconstruct work semantics: active plan, loaded skills, key files, tool state (post-compact-context.js hook).",
+      "layered_lifetimes": "Keep long-lived rules, persistent memory, session continuity, and temporary dialogue as distinct layers with different entry costs."
+    }
+  },
+  "$schema": "https://nextain.com/schemas/agents-rules/v2",
+  "version": "2.0.0",
+  "project": "{{PROJECT_NAME}}",
+  "description": "Machine-readable rules for AI tools. SoT for all enforcement gates. Edit this file, then run scripts/sync-harness-mirrors.sh.",
+  "charter_immutability": {
+    "description": "확정된 헌장 파일은 AI가 절대 단독 수정 불가. 수정 시 사용자 명시 승인 + 새 이슈 등록 필수.",
+    "charter_files": [
+      ".agents/context/agents-rules.json",
+      "docs/project-structure.md"
+    ],
+    "violation_action": "BLOCK — 사용자 승인 없이 헌장 파일 수정 시 작업 중단",
+    "status": "ACTIVE"
+  },
+  "resource_registry": {
+    "description": "모든 파일/폴더/패키지는 생성 전 레지스트리에 먼저 등록. 미등록 리소스 발견 시 enforce 스크립트가 삭제.",
+    "principle": "등록 → 승인 → 생성. 미등록 = BLOCK.",
+    "registries": {
+      "root_dirs": "F12 allowed_root_dirs (이 파일)",
+      "root_files": "F13 allowed_root_files (이 파일)",
+      "packages": "pnpm-workspace.yaml packages 목록 (있는 경우)",
+      "docs": "AGENTS.md 정규 디자인 문서 표 + docs/project-structure.md Doc Registry"
+    },
+    "enforcement_script": "scripts/enforce-root-structure.sh",
+    "enforcement_mode": "delete_on_fix — --fix 플래그 시 미등록 리소스 삭제"
+  },
+  "F12": {
+    "id": "F12",
+    "rule": "root_directory_whitelist",
+    "description": "루트 디렉토리는 이 목록만 허용. 새 디렉토리 생성 전 목록에 먼저 추가 (사용자 승인 후).",
+    "allowed_root_dirs": [
+      ".agents",
+      ".claude",
+      ".codex",
+      ".github",
+      ".users",
+      "READMES",
+      "about-docs",
+      "benchmark",
+      "bin",
+      "data-private",
+      "docs",
+      "examples",
+      "node_modules",
+      "packages",
+      "quarantine",
+      "scripts",
+      "src"
+    ],
+    "note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | data-private = T3 보안(키/시크릿/개인정보) — 디렉터리는 허용하되 내용은 .gitignore (절대 추적 금지) | about-docs = 이 표준 repo 자체에 대한 메타 문서(설명·검증·실험). payload 아님 — project-create/migration 이 복제 제외 | quarantine = 보류 격리(처분 6번째). 방치 의심 자산 백업. 실물은 gitignore, MANIFEST.json/README.md 만 추적. scripts/quarantine.mjs 관리 — quarantine_policy 참조",
+    "violation_action": "BLOCK — enforce-root-structure.sh --fix 가 삭제",
+    "status": "ACTIVE"
+  },
+  "F13": {
+    "id": "F13",
+    "rule": "root_file_whitelist",
+    "description": "루트 파일은 이 목록만 허용. 새 파일 생성 전 목록에 먼저 추가 (사용자 승인 후).",
+    "allowed_root_files": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+      "OPENCODE.md",
+      "CODEX.md",
+      ".gitignore",
+      ".gitmodules",
+      "LICENSE",
+      "package.json",
+      "pnpm-workspace.yaml",
+      "pnpm-lock.yaml",
+      "tsconfig.json",
+      "tsconfig.base.json",
+      "README.md",
+      "README.template.md",
+      "CHANGELOG.md",
+      "review-pass.yaml"
+    ],
+    "note": "목록 수정 = 헌장 수정 → 사용자 승인 필수 | README.md = 이 repo 소개(복제 제외) / README.template.md = 새 프로젝트가 받는 skeleton(create·migration 이 README.md 로 사용) | review-pass.yaml = 크로스리뷰 리뷰어 패널 project-local override (정본 SoT = naia-settings/review.json)",
+    "violation_action": "BLOCK — enforce-root-structure.sh --fix 가 삭제",
+    "status": "ACTIVE"
+  },
+  "quarantine_policy": {
+    "description": "보류 격리(처분 6번째 방식). 마이그레이션(harden) 중 만난 방치 의심 자산(빌드 미연결 + 한두 커밋 뒤 방치된 스캐폴드/잔재이나 지금 지우기도 애매한 회색 자산)을 즉시 삭제/유지 강요 대신 quarantine/ 로 보류하고 정책 기록 후 사용자 처분.",
+    "manager": "scripts/quarantine.mjs (add|check|list|restore|extend|purge)",
+    "manifest": "quarantine/MANIFEST.json (force-추적 — 컨텍스트가 '백업 자산이 있었다'를 항상 인지)",
+    "storage": "quarantine/ 실물 = gitignore(추적 제외) | git rm --cached 로 격리 = 이력 보존 | purge 후에도 git history 잔존",
+    "default_retention_months": 3,
+    "compress_on_expiry": true,
+    "lifecycle": "active → (cron check 가 review_by 경과 검출) → 자동 tar.gz 압축(비파괴) → archived + pending_notice → (SessionStart hook quarantine-notice.js 가 첫 세션에 surface) → 권한 유저 질의 → purge(삭제)/extend(연장)/restore(복원)",
+    "invariants": [
+      "백그라운드(cron/verify-watch)는 검출·압축·보고만 — 자동 삭제 절대 금지 (보존 우선 directive 정합)",
+      "파괴(삭제 purge)는 사용자가 의도적으로 호출할 때만 — 첫 세션 진입 시 권한 유저가 결정",
+      "만료 자동 처리 = 압축까지만 (디스크 절약, 비파괴)"
+    ],
+    "status": "ACTIVE"
+  },
+  "required_process_gate": {
+    "description": "모든 신규 기능/수정 작업은 이 순서를 반드시 따른다. 순서를 건너뛰면 코드 작성 금지.",
+    "process_status_file": ".agents/context/process-status.json (repository-wide release state only)",
+    "session_contract_dir": ".agents/session-contracts/ (per-session goal, scope, audience, ownership, and mutation authority)",
+    "update_rule": {
+      "session_start": "현재 session_id의 명시적 session contract 결박 확인; shared current_work는 읽기 전용",
+      "session_end": "세션 progress 증거 갱신; 저장소 전체 release 상태가 바뀐 경우에만 process-status 동기화"
+    },
+    "permission_model_first": {
+      "_source": "harness-books Book1 부록 A.9(#1 권한>능력) + Book2 8.5(최소 권한 모델 = 빌드 1순위, '실패의 순서로 빌드'). 흡수 검토 = alpha-adk .agents/progress/harness-books-integration-findings-2026-06-18.md B절(gap 3).",
+      "principle": "능력(P01~P05 기능 인도)보다 권한을 먼저 세운다. 신규 레포 부트스트랩의 0번째 단계(P00)로 최소 권한 모델(고위험 행동 deny/ask 목록)을 먼저 확정한다.",
+      "already_enforced_as_invariants": [
+        "charter_immutability — 헌장 파일 단독 수정 금지 (F01)",
+        "resource_registry + F12/F13 — 루트 디렉토리/파일 화이트리스트, 미등록=BLOCK",
+        "F-SEC01 — 추적 경로 시크릿/개인정보 금지"
+      ],
+      "ask_category": "위 already_enforced_as_invariants는 deny/BLOCK 계열(상시-on). ask 계열(승인 필요 고위험 행동)은 charter_immutability(헌장 수정 시 사용자 승인) + forbidden_actions의 승인 요구로 커버. 신규 레포는 자기 도메인의 고위험 ask 행동(배포·외부 발송·과금 등)을 추가 정의한다.",
+      "bootstrap_gate": "deny 계열(F01/F12/F13/F-SEC01)과 ask 계열(위 ask_category)이 신규 레포 day-0부터 정의·ACTIVE인지 확인한 뒤에 P01(기능 인도)을 시작한다. 권한 모델(deny+ask)이 비어 있으면 기능 작업 금지."
+    },
+    "steps": [
+      {
+        "id": "P01",
+        "name": "user_scenarios",
+        "description": "docs/progress/02.user-scenarios/INDEX.md에 해당 UC를 추가/업데이트. 누가, 무엇을, 왜 하는지.",
+        "deliverable": "docs/progress/02.user-scenarios/INDEX.md UC 항목",
+        "gate": "UC 항목 없으면 다음 단계 금지"
+      },
+      {
+        "id": "P02",
+        "name": "test_scenarios",
+        "description": "UC에 대응하는 시나리오 테스트(TEST-S)를 docs/progress/03.uc-tests/INDEX.md에 매핑.",
+        "deliverable": "docs/progress/03.uc-tests/INDEX.md TEST-S 항목",
+        "gate": "테스트 파일명/그룹명 명시 없으면 다음 단계 금지"
+      },
+      {
+        "id": "P03",
+        "name": "requirements",
+        "description": "docs/progress/01.requirements/INDEX.md에 FR/NFR 항목 추가/업데이트 (상태: Draft).",
+        "deliverable": "docs/progress/01.requirements/INDEX.md FR/NFR 항목",
+        "gate": "요구사항 항목 없으면 코드 작성 금지"
+      },
+      {
+        "id": "P04",
+        "name": "integration_test",
+        "description": "통합 테스트 파일 생성 또는 검증 스크립트 결과 첨부.",
+        "deliverable": "테스트 파일 경로 또는 검증 결과",
+        "gate": "테스트 없으면 PR 머지 금지"
+      },
+      {
+        "id": "P05",
+        "name": "requirements_complete",
+        "description": "작업 완료 후 요구사항 상태를 Done으로 갱신하고, 세 문서 독자층의 영향을 판정한 이슈별 receipt를 작성.",
+        "deliverable": "docs/progress/01.requirements/INDEX.md 상태 Done + docs/progress/99.dev-comm/issue-*-documentation-impact.json",
+        "gate": "커밋 전 요구사항 상태와 documentation impact receipt 검증 필수"
+      }
+    ]
+  },
+  "mandatory_reads": {
+    "description": "모든 세션 시작 시 순서대로 읽어야 하는 파일.",
+    "files": [
+      {
+        "order": 1,
+        "path": ".agents/context/agents-rules.json",
+        "reason": "규칙 SoT. 금지/필수 규칙 전체."
+      },
+      {
+        "order": 2,
+        "path": ".agents/context/project-index.yaml",
+        "reason": "컨텍스트, 세션 계약, 설계 문서 위치 색인."
+      },
+      {
+        "order": 3,
+        "path": "docs/project-structure.md",
+        "reason": "허용된 루트 구조 명세."
+      }
+    ]
+  },
+  "forbidden_actions": [
+    {
+      "id": "F01",
+      "rule": "charter_modification_without_approval",
+      "description": "헌장 파일 수정 시 사용자 명시 승인 없으면 BLOCK.",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "F02",
+      "rule": "unregistered_root_dir_creation",
+      "description": "F12 allowed_root_dirs에 없는 루트 디렉토리 생성 금지.",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "F03",
+      "rule": "unregistered_root_file_creation",
+      "description": "F13 allowed_root_files에 없는 루트 파일 생성 금지.",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "F04",
+      "rule": "process_gate_skip",
+      "description": "P01~P05 순서 건너뛰고 코드 작성 금지.",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "F05",
+      "rule": "session_contract_missing_or_ambiguous",
+      "description": "읽기 전용 조사 외 변경은 명시적 BOUND 세션 계약 없이 금지. shared process-status/current_work 결박 금지.",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "F-SEC01",
+      "rule": "no_secrets_in_tracked_paths",
+      "description": "키·토큰·시크릿·개인정보(음성/얼굴 등)는 git 추적 경로에 두지 않는다. data-private/ (gitignored) 또는 외부 시크릿 매니저에만. 추적 발견 시 git rm --cached + (push됐으면) history purge.",
+      "violation_action": "BLOCK — security.test.mjs 가 추적 경로의 시크릿/개인정보 패턴 검출 시 실패",
+      "status": "ACTIVE"
+    }
+  ],
+  "self_trust_config": {
+    "description": "self-trust 게이트(M2 SDLC / M4 완료증거 / M3 구조) 공통 설정. hook과 CI 스크립트가 하드코딩 대신 여기서 읽는다. 언어·경로·파일명 비종속을 위해 외부화. 프로젝트는 이 값을 자기 스택에 맞게 오버라이드한다.",
+    "enforcement_level": "enforced",
+    "_enforcement_levels": "off=검사안함 | advisory=경고만(차단 안함) | enforced=차단",
+    "completion": {
+      "_comment": "완료선언 탐지. 다국어. ASCII는 단어경계, CJK/한글은 부분일치. negations에 걸리면 완료선언 아님으로 간주.",
+      "keywords": [
+        "완료",
+        "통과",
+        "끝남",
+        "해결함",
+        "done",
+        "complete",
+        "completed",
+        "finished",
+        "shipped",
+        "resolved",
+        "fixed",
+        "CLEAN",
+        "all pass",
+        "all passed",
+        "green",
+        "完了",
+        "完成"
+      ],
+      "negations": [
+        "미완료",
+        "안 됨",
+        "아직",
+        "not done",
+        "unfinished",
+        "incomplete",
+        "未完",
+        "WIP",
+        "wip"
+      ],
+      "evidence_patterns": [
+        "Verified:",
+        "Evidence:",
+        "artifact:",
+        "sha256",
+        "coverage",
+        "closes #",
+        "resolves #",
+        "fixes #"
+      ],
+      "_strong_evidence_comment": "강한 증거 = 재실행 가능한 검증 인용(review-pass 리포트 경로 / acceptance check 명령). 키워드(evidence_patterns)는 위조 가능 → 약한 증거로 advisory 경고. docs/acceptance-criteria.md 참조.",
+      "strong_evidence_patterns": [
+        "review-pass:",
+        "review-log",
+        ".agents/reviews/",
+        "acceptance:",
+        "VERDICT=",
+        "CONFIRMED-resolved"
+      ]
+    },
+    "change_set_rules": [
+      {
+        "id": "production-source",
+        "description": "프로덕션 소스 변경 시 시나리오+요구사항 산출물 필요. 프로젝트는 when_changed_glob를 자기 소스 경로로 바꾼다(예: Python은 src/**/*.py, Rust는 crates/**).",
+        "when_changed_glob": [
+          "src/main/**"
+        ],
+        "requires": [
+          "docs/progress/02.user-scenarios/INDEX.md",
+          "docs/progress/01.requirements/INDEX.md"
+        ],
+        "exempt_glob": [
+          "**/*.test.*",
+          "**/test/**",
+          "docs/**",
+          "**/*.md"
+        ]
+      }
+    ],
+    "documentation_impact_gate": {
+      "description": "프로덕션 변경은 저장소 문서, 사용자 사용법, 재사용 가능한 학습 자료의 영향을 모두 UPDATED 또는 근거 있는 N/A로 판정한다.",
+      "enabled": true,
+      "when_changed_glob": [
+        "src/main/**"
+      ],
+      "exempt_glob": [
+        "**/*.test.*",
+        "**/test/**"
+      ],
+      "receipt_glob": "docs/progress/99.dev-comm/issue-*-documentation-impact.json",
+      "required_targets": [
+        "repository_docs",
+        "user_manual",
+        "reusable_learning"
+      ],
+      "target_evidence_glob": {
+        "repository_docs": [
+          "README.md",
+          "docs/**"
+        ],
+        "user_manual": [
+          "docs/manual/**",
+          ".users/**",
+          "READMES/**"
+        ],
+        "reusable_learning": [
+          "AGENTS.md",
+          "docs/lessons/**",
+          "docs/book/**",
+          "about-docs/**"
+        ]
+      },
+      "na_rationale_min_chars": 30,
+      "na_rationale_placeholder_phrases": [
+        "not relevant",
+        "not applicable",
+        "no impact",
+        "none",
+        "n/a",
+        "관련 없음",
+        "해당 없음",
+        "없음"
+      ]
+    },
+    "artifact_min_meaningful_chars": 100,
+    "terminology": {
+      "_comment": "용어 게이트. 프로젝트 약어는 glossary에 정의하거나 풀어쓴다(불친절한 약자 금지). 일반 상식 약어만 whitelist. forbidden_terms = 금지 신조어/자체용어 블랙리스트(프로젝트가 채움).",
+      "glossary_file": "docs/glossary.md",
+      "acronym_min_len": 3,
+      "acronym_whitelist": [
+        "API",
+        "URL",
+        "JSON",
+        "YAML",
+        "HTTP",
+        "HTML",
+        "CSS",
+        "SDK",
+        "CLI",
+        "NFC",
+        "PDF",
+        "CSV",
+        "SQL"
+      ],
+      "forbidden_terms": []
+    }
+  }
 }

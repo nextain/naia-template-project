@@ -7,7 +7,7 @@ import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const HOOK = resolve(__dirname, "../../.agents/hooks/charter-guard.js");
+const HOOK = resolve(__dirname, "../../.agents/hooks/charter-guard.mjs");
 
 function setupRoot(level = "enforced") {
 	const d = mkdtempSync(join(tmpdir(), "charter-"));

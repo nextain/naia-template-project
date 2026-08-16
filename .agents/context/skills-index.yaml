@@ -1,0 +1,171 @@
+# Skills Index — naia-adk
+# 매 세션 시작 시 SKILL.md를 다시 읽지 않아도 되도록 핵심 정보를 요약.
+# SKILL.md가 변경되면 이 파일도 함께 업데이트할 것.
+
+skills:
+  finetune-persona:
+    trigger: "페르소나/캐릭터 파인튜닝, Qwen3 LoRA 학습, 데드풀/캐릭터 모델 만들기, persona finetune"
+    what: "Qwen3 베이스에 캐릭터를 LoRA로 학습 → 전/후 평가 → GGUF 변환 → naia 교체기능 로드. 데이터셋만 바꾸면 어떤 캐릭터든 재사용. 훈련 시간 측정 포함"
+    arg: "[persona slug | --stage train|eval|export|load]"
+    scripts: [scripts/train_lora.py, scripts/eval_persona.py, scripts/merge_and_export.py]
+    notes: "핵심 함정 2개 — (1) completion-only 마스킹(assistant_only_loss) 없으면 능력 깨짐, (2) ollama 배포 시 /no_think + mirostat 필요. 예제=데드풀(공개용, NSFW 제외)"
+
+  copyright-reg:
+    trigger: "저작권 등록, 업무상저작물 확인서, copyright"
+    what: "어문저작권 등록 서류 생성 (확인서 PDF + 신청명세서 초안)"
+    arg: "[저작물 제호 | PDF 경로]"
+    scripts: []
+
+  doc-coauthoring:
+    trigger: "문서 작성, 스펙 작성, 제안서, RFC, 설계 문서, PRD"
+    what: "3단계 공동 작성 (컨텍스트 수집 → 구조화·작성 → 독자 테스트)"
+    arg: null
+    scripts: []
+
+  manage-skills:
+    trigger: "Sync 단계, 새 패턴/규칙 도입 후, PR 전 검증 스킬 커버리지"
+    what: "verify-* 스킬 드리프트 탐지, 자동 생성/업데이트"
+    arg: "[스킬 이름 또는 영역]"
+    disable-model-invocation: true
+    scripts: [validate-skill-frontmatter.sh]
+
+  merge-worktree:
+    trigger: "워크트리 브랜치 머지, issue-driven-development Commit 단계"
+    what: "Squash-merge + git history 분석 기반 시맨틱 커밋 생성"
+    arg: "[target-branch]"
+    disable-model-invocation: true
+    scripts: []
+
+  patent-draft:
+    trigger: "특허, patent, 출원, 명세서, 청구항"
+    what: "KIPO 전자출원 양식 기반 특허 명세서 초안 생성"
+    arg: "[slug or description]"
+    scripts: []
+
+  patent-pipeline:
+    trigger: "특허, 가출원, patent, 발명 발굴"
+    what: "코드베이스 AI 분석 → 특허 후보 발굴 → 평가 → 가출원 초안"
+    arg: "[target=repo/path] [scope=full|module|feature] [step=0-8]"
+    scripts: []
+
+  payroll:
+    trigger: "급여명세서, 급여 보내기, payroll"
+    what: "급여명세서 A4 PDF 생성 + 사원 이메일 발송"
+    arg: "[YYYY-MM | 직접 입력]"
+    scripts: [send_payroll.py]
+
+  press-release:
+    trigger: "보도자료, press release, 기자 발송, PR 배포"
+    what: "보도자료 작성 → 기자 조사 → 개인화 발송 → 결과 수집 → 인사이트"
+    arg: null
+    scripts: []  # 실제 스크립트는 scripts/press-release/ (워크스페이스 레벨)
+
+  project-create:
+    trigger: "새 프로젝트 생성, 새 레포 scaffold, 프로젝트 부트스트랩, template-project로 시작"
+    what: "naia-template-project base로 새 프로젝트 scaffold + 정본 레포 생성 + (선택) submodule 등록"
+    arg: "[프로젝트명] [한 줄 설명]"
+    scripts: [scaffold.mjs]
+    note: "repo_type별 mirror pattern 자동 적용. 외부 push는 mass-export guard로 사용자 직접."
+
+  project-migration:
+    trigger: "프로젝트 별도 레포 분리, submodule 등록, 기존 디렉토리를 레포로, 하네스 적용/마이그레이션"
+    what: "기존 프로젝트를 정본 레포+submodule로 분리(extract) 또는 self-trust 하네스 점진 적용(harden)"
+    arg: "[대상 경로] [extract|harden]"
+    scripts: []
+    note: "push-first → 재clone 패턴(in-place 변환 금지). Windows lock·gitignore force-add 교훈 내장."
+
+  read-doc:
+    trigger: ".hwp/.hwpx/.pdf/.docx/.xlsx/.pptx 파일 언급, 문서 내용 검토/분석"
+    what: "문서 파일 텍스트 추출 → 컨텍스트 로드 (HWP/HWPX/PDF/DOCX/XLSX/PPTX)"
+    arg: "<file-path-or-glob>"
+    scripts: [extract_doc.py]
+    note: "Windows에서 PYTHONIOENCODING=utf-8 필요. 사이드카 .txt 있으면 우선 사용."
+
+  translate-doc:
+    trigger: "문서 번역, PDF 번역, Naia 키로 번역, 지원 모델/가격 조회"
+    what: "Naia 계정 크레딧으로 대용량 문서를 재개 가능하게 번역하고 Markdown/HTML/PDF와 비용 영수증을 검증"
+    arg: "<input> [--model MODEL] [--output-dir DIR]"
+    scripts: [scripts/naia_translate.py]
+    note: "정식 키 환경변수는 NAIA_KEY. 실제 값은 환경변수/운영체제 키 저장소/개인 포크의 data-private 암호화 볼트에 두고, 모델·가격은 운영 API에서 조회하며 구매 문서는 gitignored 경로에만 둔다."
+
+  review-pass:
+    trigger: "코드 리뷰, 교차 검증, stage-gated review"
+    what: "결정론적 복잡도 선행 게이트 + 4단계 멀티 AI 상호검증 리뷰 (planning/development/test/integration)"
+    arg: null
+    scripts: [scripts/review-preflight.mjs, scripts/measure-complexity.mjs]
+    note: "저장소 전체 변경을 줄·바이트·긴 줄로 모델 리뷰 전에 측정하며 부분 범위 우회를 거부한다. 해시·줄/바이트 상한·사유·책임자·권한 근거·90일 이내 만료에 묶인 예외도 자동 Clean이 아니며 검토자가 실제 코드와 대조한다. planning/integration은 원요청·baseline·보존 계약을 필수 입력으로 하고 4개 역할을 분리하며, preservation/권한 CRITICAL 단독 발견도 veto로 유지."
+
+  secret-vault:
+    trigger: "암호화된 키 파일 풀기, key.age unlock/lock, 키 추가 후 재암호화, 복호화가 깨져 보임, data-private 시크릿"
+    what: "age passphrase 볼트(key.age = tar+age 암호문 / 평문 key/) 열기·수정·재암호화. 평문 비커밋·비번은 사람이 직접 입력 계약"
+    arg: null
+    scripts: [scripts/vault.sh]
+    note: "표준 소비자=data-private 서브모듈. 비번은 AI를 거치지 않음(사용자 `!` 직접 실행)."
+
+  manage-discord-sessions:
+    trigger: "Discord 설정, Codex/Claude 백그라운드 작업 상태, 실시간 활동, 멈춤 진단, 재부팅 복구, idle history rotation"
+    what: "ADK 내부 SQLite에서 Discord AI 작업의 서비스 신선도·활동·검증 증거를 조회하고, 이후 Gateway/재부팅 복구를 같은 계약으로 관리"
+    arg: null
+    scripts: [scripts/manage-discord-sessions.sh]
+    note: "Gateway 실시간 수신, Codex/Claude 독립 실행, Linux systemd/Windows Task Scheduler 자동 시작, 재부팅 복구, stale permission-profile 교체, 무진행/채널응답 watchdog, 권한 바인딩된 명시적 history/latest/reply와 해시 검증 첨부 복구까지 구현됨. 결과 정확성은 활동 상태와 분리해 completionAssessment 근거로 판단."
+
+  session-resume:
+    trigger: "claude --resume, codex/opencode 세션 이어서, 이전 세션 뭐했지, 세션 기록 봐줘"
+    what: "Claude Code/Codex/opencode 세션(JSONL·SQLite) 통합 파싱 → 대화 흐름 요약 → 끊긴 작업 이어하기"
+    arg: "[session-id | 경로] [--tool claude|codex|opencode] [--list]"
+    scripts: [parse-session.js]
+    note: "3포맷 자동 감지. stdout은 ASCII-safe, 한국어 본문은 UTF-8 digest 파일로 출력. interrupt(quota/mid-action 등) 자동 판정."
+
+  sync-upstream:
+    trigger: "upstream sync, fork 동기화, naia-adk에서 받아와, sync-upstream"
+    what: "ADK fork chain 정식 동기화(git merge upstream/main) — drift 감지→fetch→merge→버전 스탬프. selective cherry-pick 체인 부패 예방"
+    arg: "[--merge] [--remote URL]"
+    scripts: [sync-upstream.js]
+    note: "VERSION + .agents/upstream-sync.yaml로 drift 감지. 충돌 정책 = upstream-structure-first. 최상위(naia-adk)는 no-op."
+
+  verify-implementation:
+    trigger: "기능 구현 후, PR 전, 코드 리뷰 시, Review/Post-test Review 단계"
+    what: "등록된 모든 verify-* 스킬 순차 실행 → 통합 검증 보고서"
+    arg: "[특정 verify 스킬 이름]"
+    disable-model-invocation: true
+    scripts: []
+
+  verify-contract-conformance:
+    trigger: "선언된 API/인터페이스 계약 또는 구현 심볼 수정 후, PR 전"
+    what: "계약과 구현 사이의 시그니처·선언만 존재·구현만 존재 드리프트를 결정론적으로 검출"
+    arg: null
+    disable-model-invocation: true
+    scripts: []
+
+  verify-benchmark-contract:
+    trigger: "packages/benchmark-contract 또는 개발 모델 라우팅 수정 후, Review/Post-test Review 및 커밋 전"
+    what: "벤치 스키마·공급자 영수증·비용 집계·HMAC 저널·Windows DPAPI·듀얼 컨텍스트 결정론 검증"
+    arg: null
+    disable-model-invocation: true
+    scripts: []
+
+  verify-request-contract:
+    trigger: "request-contract·session-inject 코어/어댑터/등록/스키마/review-pass 수정 후, Review/Post-test Review 및 커밋 전"
+    what: "원요청 source 해시체인→REQ→UC/UC-test→FE/FE-test→구현→증거, 세션 바인딩, 서명 권한, 2회 Clean, Claude Code/Codex 동등성 결정론 검증"
+    arg: null
+    disable-model-invocation: true
+    scripts: []
+
+  verify-product-preservation:
+    trigger: "기존 프로젝트의 기능 추가·통합·리팩터링 후, planning/integration 리뷰와 release 전"
+    what: "immutable baseline 대비 제품 표면·vendor provenance·파괴 변경 권한·before/after capability probe·delivery gate 검증"
+    arg: null
+    disable-model-invocation: true
+    scripts: []
+
+  webapp-testing:
+    trigger: "naia.nextain.io, about.nextain.io, aiedu.nextain.io E2E 테스트"
+    what: "Playwright로 로컬 웹 앱 E2E 테스트, 스크린샷, 콘솔 로그 캡처"
+    arg: null
+    scripts: [with_server.py]
+
+  weekly-report:
+    trigger: "주간 업무 결과, 결과 작성, 이번 주 뭐 했는지"
+    what: "git 커밋 + 작업 로그에서 주간 업무 결과 마크다운 생성"
+    arg: "[YYYYMMDD-YYYYMMDD | 이번주 | 지난주]"
+    scripts: []

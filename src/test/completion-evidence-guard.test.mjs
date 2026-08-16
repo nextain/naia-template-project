@@ -10,7 +10,7 @@ import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const HOOK = resolve(__dirname, "../../.agents/hooks/completion-evidence-guard.js");
+const HOOK = resolve(__dirname, "../../.agents/hooks/completion-evidence-guard.mjs");
 
 function setupRoot(level = "enforced", documentationGate = false) {
 	const d = mkdtempSync(join(tmpdir(), "m4-"));

@@ -1,24 +1,16 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "_comment": "template-project self-trust 하네스 등록. 로컬 hook = 1차 마찰(UX). 진짜 강제는 원격 CI(danger.js). git hook 레이어는 lefthook으로 추가 예정.",
   "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node .agents/hooks/quarantine-notice.js"
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Bash|shell_command|Edit|Write|NotebookEdit|apply_patch",
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/session-contract-gate.js"
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-contract-gate.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/request-contract.js\" PreToolUse"
           }
         ]
       },
@@ -27,7 +19,39 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .agents/hooks/completion-evidence-guard.js"
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pr-guard.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/destructive-git-guard.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/catastrophic-delete-guard.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/commit-guard.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/deploy-guard.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-push-guard.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/email-send-guard.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/gcs-guard.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/rdd-experiment-guard.js\""
           }
         ]
       },
@@ -36,15 +60,68 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .agents/hooks/charter-guard.js"
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/design-doc-guard.js\""
           },
           {
             "type": "command",
-            "command": "node .agents/hooks/sdlc-gate-guard.js"
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prod-gateway-guard.js\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/beh-pretool.js\""
+          }
+        ]
+      },
+      {
+        "matcher": "Task|Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/subagent-spawn-guard.js\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/beh-session-start.js\""
           },
           {
             "type": "command",
-            "command": "node .agents/hooks/structure-guard.js"
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/request-contract.js\" SessionStart"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-contract-recovery.js\" SessionStart"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/request-contract.js\" UserPromptSubmit"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-inject.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/beh-tick.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-contract-recovery.js\" UserPromptSubmit"
           }
         ]
       }
@@ -55,7 +132,81 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .agents/hooks/conform-gate.js"
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-entry-points.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/cascade-check.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/agents-context-mirror.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-translation-batch.cjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/ctx-index-rebuild.js\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/request-contract.js\" PostToolUse"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/beh-record.js\""
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/request-contract.js\" PreCompact"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-compact-context.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/request-contract.js\" PostCompact"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/request-contract.js\" Stop"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/beh-stop.js\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-translation-batch.cjs\" --flush"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-contract-recovery.js\" Stop"
           }
         ]
       }

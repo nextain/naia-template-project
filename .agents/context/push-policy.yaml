@@ -1,0 +1,91 @@
+_copyright: "Copyright 2026 Nextain Inc. All rights reserved."
+
+# Push Policy — research / development / service 분리 표준
+# 사용자 directive 2026-05-29: research/development 단계는 push marker 불필요.
+# source push and production deployment are separate actions.
+
+policy:
+  principle: |
+    Normal non-force, non-deleting git push is a routine repository step after the authorized checks
+    and does not require a marker or repeated approval in research, development, or service repositories.
+    A source push is not itself a production deployment. Force push and actual production-impacting
+    deployment and remote branch/tag deletion remain explicit-approval exceptions.
+
+  why: |
+    1. 연구개발 작업의 push 빈도 높음. strict marker 가 작업 흐름 끊음.
+    2. service 영향 (prod 사용자) 없는 변경에 동일 수준 게이트 = 과도.
+    3. 단계별 권한 분리 = ADK 의 RBAC 정합.
+
+three_tier_classification:
+  research:
+    description: |
+      paradigm 탐구, 실험, 측정, peer review. prod 영향 없음.
+    examples:
+      - "naia-cognitive (인지 layer 연구)"
+      - "naia-memory (메모리 인프라 연구)"
+      - "naia-sing (SVS 연구)"
+      - "naia-labs (실험)"
+    push_policy: 자율 (marker 불요)
+
+  development:
+    description: |
+      ADK base / workspace / 개발 도구. 서비스 배포 전 작업.
+    examples:
+      - "naia-adk (workspace base)"
+      - "alpha-adk (luke fork)"
+      - "naia-business-adk"
+      - "onmam-adk (개발 도구, prod 배포 X)"
+      - "data-company / data-teams (자료)"
+    push_policy: 자율 (marker 불요)
+
+  service:
+    description: |
+      운영 배포. prod 사용자 영향.
+    examples:
+      - "onmam (alpha/staging/prod deploy)"
+      - "naia.nextain.io (web vertical)"
+      - "naia-os (desktop / kiosk 배포)"
+      - "naia-model-infra (RunPod / 가동 backend)"
+      - "naia-agent (gateway 배포)"
+    push_policy: non-force non-deleting push autonomous; remote-ref deletion and production deploy strict approval
+    detail: |
+      - 사용자 prompt sentinel (`마커발급 <uses> <duration> [reason]`)
+      - cf [[project_marker_issue_sentinel_hook]]
+
+gates:
+  decision_test: |
+    "Is this a normal non-force source push, or an actual production-impacting action?"
+    - non-force non-deleting source push → autonomous after required verification
+    - remote branch/tag deletion, force push, or production-impacting action → explicit approval
+
+  edge_cases:
+    deploy_script_in_research_repo: |
+      research repo 안의 deploy script (예: naia-model-infra/deploy/runpod/) 가
+      실제 prod 배포에 사용되면 = 그 부분만 service 정책 적용.
+    config_change: |
+      운영 config (port, credential) 변경은 service.
+      research config (학습 hyperparam 등) 은 development.
+
+active_implementation:
+  state: |
+    The shared git-push guard allows non-force non-deleting push and blocks remote-ref deletion and
+    force variants. Production deploy guards remain separate and fail closed without approval evidence.
+  deprecated_bypasses: |
+    Per-repo no-harness files, ad-hoc approval marker creation, and settings-based guard removal are
+    historical proposals and MUST NOT be recommended or used. The active shared policy is the only path.
+
+ai_classifier_note: |
+  Do not fabricate marker files or bypass a production deployment guard. Routine non-force source
+  push needs no marker. Remote-ref deletion, force push, and production-impacting actions require exact approval.
+
+cross_references:
+  related_memories:
+    - "feedback_push_marker_only_for_service (사용자 directive SoT)"
+
+revision_history:
+  - date: "2026-07-30"
+    note: "Separated routine non-force non-deleting source push from remote-ref deletion, force push, and production deployment; removed recurring marker approval for normal pushes."
+  - date: "2026-05-29"
+    note: |
+      사용자 directive (Phase 3 cycle 1 push 게이트 작업 중) 로 정책 분리 표준 신규 작성.
+      "연구 개발 작업에 push 체크 요구는 과한 것" — research + development = marker 불요.
