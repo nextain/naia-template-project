@@ -130,6 +130,9 @@ skills/business/press-release/_review_plan.md
 
 # 내부 세션 아티팩트(개인경로·내부URL·키 흔적) + 제3자 PII 비추적(OSS readiness 게이트)
 .agents/progress/
+# about-docs 는 이 표준 자체에 대한 메타 문서다. 그 안의 진행 메모는 작업 내역이라
+# 새 사용자의 워크스페이스로 딸려가면 안 된다.
+about-docs/progress/
 .agents/reviews/
 .agents/session-contracts/*
 !.agents/session-contracts/README.md
