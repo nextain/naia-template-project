@@ -204,3 +204,6 @@ scripts/triage/
 # 워크스페이스 UUID(개인 식별자) 비추적
 .naia/
 .agents/research/**/.align-audit-stamp.json
+
+# 급여 스킬이 만든 명세서 PDF(개인정보) — 저장소에 올리지 않는다
+급여명세서_*.pdf
