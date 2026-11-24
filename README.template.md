@@ -102,3 +102,15 @@ cat .agents/context/process-status.json
 5. **P05** — 완료 후 요구사항 상태 Done 업데이트
 
 > 순서를 건너뛰면 코드 작성 금지. 자세한 규칙: `.agents/context/agents-rules.json`
+
+---
+
+## Naia 생태계
+
+- **naia-shell** — [github.com/nextain/naia-shell](https://github.com/nextain/naia-shell) (데스크톱·웹 셸 클라이언트)
+- **naia-agent** — [github.com/nextain/naia-agent](https://github.com/nextain/naia-agent) (에이전트 런타임·도구 오케스트레이션)
+- **naia-memory** — [github.com/nextain/naia-memory](https://github.com/nextain/naia-memory) (에이전트 장기 기억 계층)
+- **naia-kb-compiler** — [github.com/nextain/naia-kb-compiler](https://github.com/nextain/naia-kb-compiler) (구조화 지식 베이스 컴파일러)
+- **naia-adk** — [github.com/nextain/naia-adk](https://github.com/nextain/naia-adk) (AI 개발 키트)
+- **Nextain** — [nextain.io](https://nextain.io)
+- **Naia** — [naia.nextain.io](https://naia.nextain.io)

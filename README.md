@@ -281,8 +281,12 @@ You may obtain a copy of the License at
     http://www.apache.org/licenses/LICENSE-2.0
 ```
 
-## Links
+## Naia Ecosystem
 
-- **Naia Shell** — [github.com/nextain/naia-shell](https://github.com/nextain/naia-shell)
+- **naia-shell** — [github.com/nextain/naia-shell](https://github.com/nextain/naia-shell) (desktop & web shell client)
+- **naia-agent** — [github.com/nextain/naia-agent](https://github.com/nextain/naia-agent) (agent runtime & tool orchestration)
+- **naia-memory** — [github.com/nextain/naia-memory](https://github.com/nextain/naia-memory) (persistent agent memory)
+- **naia-kb-compiler** — [github.com/nextain/naia-kb-compiler](https://github.com/nextain/naia-kb-compiler) (knowledge-base compiler for structured context)
+- **naia-adk** — [github.com/nextain/naia-adk](https://github.com/nextain/naia-adk) (AI Development Kit)
 - **Nextain** — [nextain.io](https://nextain.io)
-- **Naia Dashboard** — [naia.nextain.io](https://naia.nextain.io)
+- **Naia** — [naia.nextain.io](https://naia.nextain.io)
