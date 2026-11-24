@@ -4,7 +4,7 @@ OpenClaw → naia skill catalog migration tool.
 
 Parses [OpenClaw](https://github.com/nextain/openclaw) `SKILL.md` frontmatter (`name`, `description`, `allowed-tools`) and emits `@naia-adk/skill-spec` `SkillDescriptor` objects.
 
-Built for one-shot migration of an OpenClaw skill library into a naia-compatible catalog file. See [nextain/naia-os#275](https://github.com/nextain/naia-os/issues/275) for design.
+Built for one-shot migration of an OpenClaw skill library into a naia-compatible catalog file. See the historical migration design note (issue #275) for design.
 
 ## Quick start
 
@@ -73,7 +73,7 @@ Tested against [`nextain/openclaw`](https://github.com/nextain/openclaw) `contai
 | `vercel_cli` | T0 | openclaw-port, deploy |
 | `welcome` | T0 | openclaw-port |
 
-`agent_browser` and `welcome` are also live in `@naia-adk/skills-builtin` (manually ported via [#274](https://github.com/nextain/naia-os/issues/274)). Use this package when you have your own OpenClaw skill library to bring across.
+`agent_browser` and `welcome` are also live in `@naia-adk/skills-builtin` (manually ported; see the historical porting note (issue #274)). Use this package when you have your own OpenClaw skill library to bring across.
 
 ## License
 
