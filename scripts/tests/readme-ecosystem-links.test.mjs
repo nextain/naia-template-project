@@ -16,6 +16,8 @@ const REQUIRED_URLS = [
   'https://naia.nextain.io',
 ];
 
+const LEGACY_FREE_DOCS = ['packages/openclaw-compat/README.md'];
+
 for (const file of READMES) {
   test(`${file} has no legacy naia-os links`, () => {
     const body = readFileSync(join(root, file), 'utf8');
@@ -30,5 +32,15 @@ for (const file of READMES) {
     for (const url of REQUIRED_URLS) {
       assert.ok(body.includes(url), `${file} is missing ${url}`);
     }
+  });
+}
+
+for (const file of LEGACY_FREE_DOCS) {
+  test(`${file} has no legacy naia-os links`, () => {
+    const body = readFileSync(join(root, file), 'utf8');
+    assert.ok(
+      !body.includes('github.com/nextain/naia-os'),
+      `${file} still links to the legacy naia-os repository`,
+    );
   });
 }
